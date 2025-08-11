@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>压缩完成 - 下载文件</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/ux-enhancements.css">
+    <script src="https://zww.xiexinbao.com/js/custom-toast.js"></script>
+    <script src="https://zww.xiexinbao.com/js/util.js"></script>
+    <script src="https://zww.xiexinbao.com/js/zww_uploader.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="success-animation">
+                <div class="checkmark">✓</div>
+            </div>
+            <h1>🎉 压缩完成</h1>
+            <p>您的文件已成功压缩</p>
+        </div>
+        
+        <div class="result-card">
+            <div class="file-preview">
+                <div class="file-icon-large">📦</div>
+                <div class="file-details">
+                    <div class="file-name-container">
+                        <input type="text" id="fileName" class="file-name-input" placeholder="压缩包名称">
+                        <span class="file-extension">.zip</span>
+                        <button class="edit-name-btn" id="editNameBtn" title="编辑文件名">✏️</button>
+                    </div>
+                    <div class="file-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">压缩后大小:</span>
+                            <span class="stat-value compressed-size" id="fileSize">0 MB</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">原始大小:</span>
+                            <span class="stat-value original-size" id="originalSize">0 MB</span>
+                        </div>
+                        <div class="stat-row compression-ratio" id="compressionRatio" style="display: none;">
+                            <span class="stat-label">压缩率:</span>
+                            <span class="stat-value ratio-value" id="ratioValue">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="download-section">
+            <div class="download-header">
+                <h3>🔽 下载您的文件</h3>
+                <p>选择下载方式</p>
+            </div>
+            <button class="btn btn-primary btn-large" id="downloadBtn">
+                <span class="btn-icon">⬇️</span>
+                立即下载
+            </button>
+        </div>
+        
+        <!-- 付费下载弹框 -->
+        <div class="modal" id="paymentModal" style="display: none;">
+            <div class="modal-content payment-modal">
+                <div class="modal-header">
+                    <h3>💳 选择下载方式</h3>
+                    <button class="close-btn" id="closePaymentModal">&times;</button>
+                </div>
+                
+                <div class="file-size-notice" id="fileSizeNotice">
+                    <div class="notice-icon">⚠️</div>
+                    <p>文件大小超过 <strong>10MB</strong>，请选择下载方式：</p>
+                </div>
+                
+                <div class="payment-options">
+                    <div class="payment-option" id="freeOption">
+                        <div class="option-header">
+                            <h4>🆓 免费下载</h4>
+                            <span class="option-tag free-tag">限制版</span>
+                        </div>
+                        <div class="option-features">
+                            <p>• 需要绑定手机号</p>
+                            <p>• 限速下载</p>
+                            <p>• 最大支持 50MB</p>
+                        </div>
+                        <button class="btn btn-outline" id="chooseFreeBtn">选择免费</button>
+                    </div>
+                    
+                    <div class="payment-option premium" id="vipOption">
+                        <div class="option-header">
+                            <h4>👑 会员下载</h4>
+                            <span class="option-tag vip-tag">推荐</span>
+                        </div>
+                        <div class="option-features">
+                            <p>• 高速下载</p>
+                            <p>• 无大小限制</p>
+                            <p>• 批量下载</p>
+                        </div>
+                        <button class="btn btn-primary" id="chooseVipBtn">开通会员</button>
+                    </div>
+                </div>
+                
+                <!-- 手机号绑定区域 -->
+                <div class="phone-binding" id="phoneBinding" style="display: none;">
+                    <div class="binding-header">
+                        <h4>📱 绑定手机号</h4>
+                        <p>绑定后即可免费下载</p>
+                    </div>
+                    <div class="phone-input-group">
+                        <input type="tel" id="phoneInput" placeholder="请输入手机号" maxlength="11">
+                        <button class="btn btn-primary" id="bindPhoneBtn">绑定并下载</button>
+                    </div>
+                    <p class="phone-hint">我们承诺不会向您发送垃圾信息</p>
+                </div>
+                
+                <!-- 会员购买区域 -->
+                <div class="vip-purchase" id="vipPurchase" style="display: none;">
+                    <div class="vip-plans">
+                        <div class="plan-item" data-plan="month">
+                            <h5>月度会员</h5>
+                            <div class="plan-price">¥9.9<span>/月</span></div>
+                            <p>无限下载，高速通道</p>
+                        </div>
+                        <div class="plan-item recommended" data-plan="year">
+                            <h5>年度会员</h5>
+                            <div class="plan-price">¥99<span>/年</span></div>
+                            <p class="plan-discount">相当于 ¥8.25/月，省20%</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-large" id="purchaseVipBtn">立即开通</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="actions-footer">
+            <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                <span class="btn-icon">🔄</span>
+                压缩新文件
+            </button>
+        </div>
+    </div>
+    
+    <script src="js/analytics.js"></script>
+    <script src="js/payment.js"></script>
+    <script src="js/result.js"></script>
+</body>
+</html>

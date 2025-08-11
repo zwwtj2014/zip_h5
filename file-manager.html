@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件管理 - 压缩工具</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/ux-enhancements.css">
+    <script src="https://zww.xiexinbao.com/js/custom-toast.js"></script>
+    <script src="https://zww.xiexinbao.com/js/util.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="btn-back" onclick="history.back()">
+                <span class="back-icon">←</span>
+                返回
+            </button>
+            <h1>📝 文件管理</h1>
+            <p>管理您的文件列表</p>
+        </div>
+        
+        <div class="file-manager">
+            <div class="manager-header">
+                <div class="file-stats">
+                    <span class="stat-item">
+                        <span class="stat-label">文件数量:</span>
+                        <span class="stat-value" id="fileCount">0</span>
+                    </span>
+                    <span class="stat-item">
+                        <span class="stat-label">总大小:</span>
+                        <span class="stat-value" id="totalSize">0 MB</span>
+                    </span>
+                </div>
+                <button class="btn btn-secondary" id="addFileBtn">
+                    <span class="btn-icon">➕</span>
+                    添加文件
+                </button>
+                <input type="file" id="addFileInput" multiple accept="*/*" style="display: none;">
+            </div>
+            
+            <div class="file-list-container">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">📂</div>
+                    <h3>暂无文件</h3>
+                    <p>请返回首页选择文件或点击"添加文件"按钮</p>
+                    <button class="btn btn-primary" onclick="window.location.href='index.html'">
+                        选择文件
+                    </button>
+                </div>
+                <div class="file-list" id="fileList">
+                    <!-- 文件列表将在此动态生成 -->
+                </div>
+            </div>
+            
+            <div class="compress-actions" id="compressActions" style="display: none;">
+                <div class="compress-info">
+                    <p>准备压缩 <span id="compressFileCount">0</span> 个文件</p>
+                </div>
+                <button class="btn btn-primary btn-large" id="compressBtn">
+                    <span class="btn-icon">🗜️</span>
+                    开始压缩
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 压缩进度弹框 -->
+    <div class="modal" id="compressModal" style="display: none;">
+        <div class="modal-content">
+            <div class="loading-animation">
+                <div class="spinner"></div>
+            </div>
+            <h3>正在压缩文件...</h3>
+            <p class="compress-status" id="compressStatus">正在处理您的文件</p>
+            <div class="progress-info">
+                <span id="progressText">处理中...</span>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://zww.xiexinbao.com/js/jszip.min.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/compress.js"></script>
+    <script src="js/file-manager.js"></script>
+</body>
+</html>
