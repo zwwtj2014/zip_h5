@@ -1,74 +1,501 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
     <title>文件压缩工具</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/ux-enhancements.css">
-    <script src="https://zww.xiexinbao.com/js/custom-toast.js"></script>
-    <script src="https://zww.xiexinbao.com/js/util.js"></script>
+    <meta name="description" content="在线文件压缩工具，支持多种文件格式压缩">
+    
+    <!-- 引入外部工具库 -->
+    <script src="https://zww2.xiexinbao.com/js/zww_utils.js"></script>
+    <script src="https://zww2.xiexinbao.com/js/custom-toast.js"></script>
+    <script src="js/zww_uploader.js"></script>
+    
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        *::-webkit-scrollbar{display:none;width:0px;height:0px;}
+        *::-webkit-scrollbar-corner {display:none;width:0px;height:0px; }
+        *::-webkit-resizer{display:none;}
+        
+        body {
+            font-size: 12px;
+            background: #edeef0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            touch-action: manipulation;
+        }
+        
+        /* 头部样式 */
+        #header {
+            height: 72px;
+            text-align: center;
+            --tw-shadow-color: 0 0 #000;
+            --tw-shadow: 0px 0px 4px rgba(14, 19, 24, .07) !important;
+            --tw-shadow-colored: 0px 0px 4px var(--tw-shadow-color) !important;
+            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),var(--tw-ring-shadow, 0 0 #0000),var(--tw-shadow)!important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            width: 100%;
+            background: white;
+            z-index: 1000;
+        }
+        
+        #header .logo-name {
+            color: #54616c;
+            font-size: 24px;
+            letter-spacing: 2px;
+            font-weight: bold;
+            font-family: douyin;
+        }
+        
+        /* 主要内容区域 */
+        .common-list-box {
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            padding-top: 72px;
+        }
+        
+        .common-list {
+            background: #edeef0;
+            width: min(100%, 620px);
+            padding: 5px 20px 20px;
+            margin: 10vh auto 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .common-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            text-align: center;
+            border-radius: min(3vw, 24px);
+            padding: min(30px);
+            background-color: white;
+            flex: 0 0 20vw;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 3px 3px rgb(0 0 0 / 3%);
+            background: linear-gradient(180deg, #fff, #fffbe6);
+            align-items: center;
+        }
+        
+        .common-item .common-name {
+            padding: 16px 0;
+            font-size: 18px;
+        }
+        
+        .btnUpload {
+            margin-top: 8px;
+            padding: 8px 24px;
+            background-color: #3B82F6;
+            color: white;
+            font-size: 14px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            margin-right: 2px;
+            align-items: center;
+            gap: 8px;
+            min-height: 44px;
+        }
+        
+        .btnUpload:hover {
+            background-color: #2563EB;
+        }
+        
+        .btnUpload:active {
+            transform: scale(0.98);
+        }
+        
+
+        
+        /* 历史记录区域 */
+        .order-list {
+            background: #edeef0;
+            width: min(100%, 620px);
+            padding: 5px 20px 20px;
+            margin: 0 auto;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .order-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+        
+        .item-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .file-info {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .file-name {
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .download-btn {
+            padding: 6px 12px;
+            background: #3B82F6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+            display: inline-block;
+            min-height: 32px;
+            line-height: 20px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .common-list {
+                margin: 5vh auto 0;
+                padding: 5px 15px 20px;
+            }
+            
+
+        }
+        
+        @media (max-width: 480px) {
+            #header .logo-name {
+                font-size: 20px;
+            }
+            
+            .common-item {
+                padding: 20px;
+            }
+            
+            .common-name {
+                font-size: 16px !important;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🗜️ 文件压缩工具</h1>
-            <p>快速压缩您的文件，节省存储空间</p>
-        </div>
-        
-        <div class="upload-area">
-            <div class="upload-box" id="uploadBox">
-                <div class="upload-icon">
-                    <div class="upload-icon-animation">📁</div>
-                </div>
-                <div class="upload-text">
-                    <h3>选择文件进行压缩</h3>
-                    <p>点击这里选择文件或直接拖拽文件到此区域</p>
-                    <p class="upload-hint">支持多文件选择，所有常见格式</p>
-                </div>
-                <input type="file" id="fileInput" multiple accept="*/*" style="display: none;">
-            </div>
-        </div>
-        
-        <div class="selected-files" id="selectedFiles" style="display: none;">
-            <div class="files-header">
-                <h3>📋 已选择的文件</h3>
-                <span class="file-count" id="fileCount">0 个文件</span>
-            </div>
-            <div class="file-list" id="fileList"></div>
-            <div class="action-buttons">
-                <button class="btn btn-secondary" id="clearBtn">清空文件</button>
-                <button class="btn btn-primary" id="nextBtn">
-                    <span class="btn-icon">🚀</span>
-                    下一步：管理文件
+    <!-- 固定头部 -->
+    <div id="header">
+        <span class="logo-name">文件压缩工具</span>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="common-list-box">
+        <div class="common-list" id="common_list">
+            <div class="common-item" onclick="btnUploadFile()">
+                <div class="common-name">选择文件进行压缩</div>
+                <button class="btnUpload">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:16px;">
+                        <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15M17 8L12 3M12 3L7 8M12 3V15" 
+                              stroke="currentColor" 
+                              strokeWidth="2" 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round"/>
+                    </svg>
+                    选择文件
                 </button>
             </div>
-        </div>
-        
-        <div class="features">
-            <div class="feature-item">
-                <div class="feature-icon">⚡</div>
-                <h4>快速压缩</h4>
-                <p>高效的压缩算法</p>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">📱</div>
-                <h4>移动友好</h4>
-                <p>完美支持手机操作</p>
-            </div>
-            <div class="feature-item">
-                <div class="feature-icon">🔒</div>
-                <h4>安全可靠</h4>
-                <p>本地处理，保护隐私</p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>支持 ZIP 格式压缩，兼容所有设备</p>
+            
+
+            
+            <p style="text-align:center;padding:20px 10px 10px 10px;font-size:14px;">
+                遇到问题：<a id="kefu_url" onclick="callWxkefu()" style="text-decoration:none;color:rgb(0, 0, 238);cursor:pointer;">点此联系客服</a>
+            </p>
         </div>
     </div>
     
+    <!-- 历史记录区域 -->
+    <div class="order-list"></div>
+
+    <!-- 引入指纹识别库 -->
+    <script src="https://caipiao88.oss-cn-hangzhou.aliyuncs.com/cdn/fp/thumbmark.umd.js"></script>
+    <script>
+        ThumbmarkJS.getFingerprint().then(
+            function(fp) {
+                window.fp_id = fp;
+            }
+        );
+    </script>
+
+    <!-- 主要脚本 -->
     <script src="js/analytics.js"></script>
-    <script src="js/app.js"></script>
+    <script>
+        // 全局变量初始化
+        var admin_uid = getParamsFromUrl('admin_uid') || localStorage.getItem('admin_uid') || '';
+        localStorage.setItem('admin_uid', admin_uid);
+        
+        var popDiv = null;
+        var ua = navigator?.userAgent?.toLowerCase();
+        
+        // 文件选择相关变量
+        var selectedFiles = [];
+        
+        // 使用$uploader进行文件选择
+        async function btnUploadFile() {
+            try {
+                // 检查$uploader是否已加载
+                if (typeof $uploader === 'undefined') {
+                    showToast('文件选择器未加载，请刷新页面重试');
+                    return;
+                }
+                
+                // 使用$uploader选择多文件
+                var files = await $uploader.fileChooseMultiple({
+                    accept: "*/*"
+                });
+                
+                console.log('文件选择结果:', files);
+                
+                if (files && files.length > 0) {
+                    selectedFiles = Array.from(files);
+                    console.log('已选择文件数量:', selectedFiles.length);
+                    
+                    // 文件选择打点
+                    if (window.analytics) {
+                        const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+                        const fileTypes = getFileTypes(selectedFiles);
+                        window.analytics.fileSelect(files.length, totalSize, fileTypes);
+                    }
+                    
+                    showToast(`✅ 已选择 ${files.length} 个文件`);
+                    
+                    // 直接跳转到文件管理页面
+                    goToFileManager();
+                } else {
+                    console.log('文件选择为空或未定义');
+                    showToast('未选择任何文件');
+                }
+            } catch (error) {
+                console.error('文件选择失败:', error);
+                showToast('文件选择失败，请重试');
+            }
+        }
+
+        
+        // 下一步按钮
+        function goToFileManager() {
+            if (selectedFiles.length === 0) {
+                showToast('⚠️ 请先选择文件');
+                return;
+            }
+            
+            // 文件数据传递
+            try {
+                const fileData = selectedFiles.map(file => ({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type || '',
+                    lastModified: file.lastModified
+                }));
+                
+                // 使用 localStorage 存储文件数据（更持久）
+                localStorage.setItem('selectedFilesData', JSON.stringify(fileData));
+                localStorage.setItem('filesTransferTime', Date.now().toString());
+                
+                // 页面跳转打点
+                if (window.analytics) {
+                    window.analytics.track('page_navigate', {
+                        from: 'index',
+                        to: 'file_manager',
+                        file_count: selectedFiles.length,
+                        total_size: getTotalSize()
+                    });
+                }
+                
+                // 使用 POST 方式跳转，保持文件在内存中
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'file-manager.html';
+                form.style.display = 'none';
+                
+                // 创建隐藏字段存储文件数量
+                const fileCountInput = document.createElement('input');
+                fileCountInput.type = 'hidden';
+                fileCountInput.name = 'fileCount';
+                fileCountInput.value = selectedFiles.length;
+                form.appendChild(fileCountInput);
+                
+                document.body.appendChild(form);
+                
+                // 在新窗口中传递文件数据
+                window.tempSelectedFiles = selectedFiles;
+                
+                window.location.href = 'file-manager.html';
+            } catch (error) {
+                if (window.analytics) {
+                    window.analytics.error('file_transfer_error', error.message);
+                }
+                showToast('❌ 文件传递失败，请重试');
+            }
+        }
+
+        
+        // 工具函数
+        function getFileTypes(files) {
+            const types = {};
+            files.forEach(file => {
+                const ext = getFileExtension(file.name);
+                types[ext] = (types[ext] || 0) + 1;
+            });
+            return types;
+        }
+        
+        function getFileExtension(fileName) {
+            return fileName.split('.').pop().toLowerCase() || 'unknown';
+        }
+        
+        function getTotalSize() {
+            return selectedFiles.reduce((sum, file) => sum + file.size, 0);
+        }
+        
+
+        
+        function showToast(message) {
+            if (window.popToast && typeof window.popToast === 'function') {
+                window.popToast({title: message, timeout: 3000});
+            } else {
+                console.log('Toast:', message);
+            }
+        }
+        
+        // 客服功能
+        async function callWxkefu() {
+            var user_id = getUserId() || window.fp_id || '';
+            var wx_service_link = `https://work.weixin.qq.com/kfid/kfc7d846fca34c6ca69?enc_scene=ENCettynNzrtEHbKDpamvHQPpMev884BwvoYrk3i2CQymZ&scene_param=${user_id}`;
+            
+            const isWx = /micromessenger/i.test(navigator.userAgent);
+            if (isWx) {
+                window.location.href = wx_service_link;
+                return;
+            }
+            
+            // 非微信环境处理
+            const hasTouchScreen = ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0);
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const isMobile = isAndroid || isIOS || /webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            let deviceType = 'pc';
+            if (hasTouchScreen && isMobile) {
+                if (isAndroid) {
+                    deviceType = 'android';
+                } else if (isIOS) {
+                    deviceType = 'iphone';
+                } else {
+                    deviceType = 'android';
+                }
+            }
+
+            if (deviceType === 'pc') {
+                // PC端微信跳转链接处理
+                const parsedUrl = new URL(wx_service_link);
+                const kfid = parsedUrl.pathname.split('/')[2];
+                const encScene = parsedUrl.searchParams.get('enc_scene');
+                const sceneParam = parsedUrl.searchParams.get('scene_param');
+                const newUrl = new URL('weixin://jumptokfchat/');
+                newUrl.searchParams.append('kfid', kfid);
+                newUrl.searchParams.append('scene', '50');
+                const extParams = new URLSearchParams();
+                if (encScene) {
+                    extParams.append('enc_scene', encScene);
+                }
+                if (sceneParam) {
+                    extParams.append('scene_param', sceneParam);
+                }
+                extParams.append('refkey', '');
+                newUrl.searchParams.append('ext_params', extParams.toString());
+                wx_service_link = newUrl.toString();
+            } else {
+                // 移动端处理
+                try {
+                    const getProtocol = () => window.location.protocol.indexOf('https') > -1 ? 'https:' : 'http:';
+                    const response = await fetch(getProtocol() + '//www.xiexinbao.com/txb/wxticket', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `kfurl=${encodeURIComponent(wx_service_link)}`
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const _kefu_url = await response.text();
+                    if (_kefu_url.startsWith('weixin://')) {
+                        wx_service_link = _kefu_url;
+                    }
+                } catch (error) {
+                    console.error("获取微信客服链接失败:", error);
+                }
+            }
+            
+            window.location.href = wx_service_link;
+        }
+        
+        // 页面访问打点
+        if (window.analytics) {
+            window.analytics.pageView('index', {
+                entry_time: new Date().toISOString()
+            });
+        }
+        
+        console.log('🚀 压缩工具已加载完成');
+    </script>
+
+    <!-- 统计脚本 -->
+    <script>
+        (function() {
+            var cswtj_id = '';
+            var _plat = window.location.hostname;
+            var _w = 'compress.html';
+            if (typeof localStorage == "object") {
+                cswtj_id = localStorage.getItem('cswtj_id') || ''; 
+            }
+            function _loadtj(retries) {
+                var hm = document.createElement("script");
+                hm.src = getProtocol()+"//log.xiexinbao.com/cswtj.js?plat="+_plat+"&w="+_w+"&cswtj_id="+cswtj_id;
+                hm.onload = function() {};
+                hm.onerror = function() {
+                    if (retries > 0) {
+                        _loadtj(retries - 1);
+                    }
+                    console.log('cswtj.js load error!')
+                };
+                var s = document.getElementsByTagName("script")[0]; 
+                s.parentNode.insertBefore(hm, s);
+            }
+            _loadtj(1);
+        })();
+    </script>
 </body>
 </html>

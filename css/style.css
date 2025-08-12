@@ -10,38 +10,59 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     color: #333;
-    line-height: 1.6;
+    line-height: 1.5;
     overflow-x: hidden;
+    font-size: 16px;
+    touch-action: manipulation; /* 优化移动端触摸体验 */
 }
 
 .container {
     max-width: 900px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 15px;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+}
+
 /* 头部样式 */
 .header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
     color: white;
     position: relative;
 }
 
 .header h1 {
-    font-size: 2.8em;
-    margin-bottom: 10px;
+    font-size: 2.2em;
+    margin-bottom: 20px;
     text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .header p {
-    font-size: 1.2em;
+    font-size: 1.1em;
     opacity: 0.9;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+}
+
+/* 移动端头部优化 */
+@media (max-width: 768px) {
+    .header {
+        margin-bottom: 20px;
+    }
+    
+    .header h1 {
+        font-size: 1.8em;
+        margin-bottom: 15px;
+    }
 }
 
 .btn-back {
@@ -100,22 +121,36 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
 }
 
 .upload-box {
     background: rgba(255, 255, 255, 0.95);
-    border: 3px dashed #ddd;
-    border-radius: 20px;
-    padding: 60px 40px;
+    border: 2px dashed #ddd;
+    border-radius: 15px;
+    padding: 40px 30px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.4s ease;
+    transition: all 0.3s ease;
     width: 100%;
     max-width: 600px;
     backdrop-filter: blur(10px);
     position: relative;
     overflow: hidden;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 移动端上传区域优化 */
+@media (max-width: 768px) {
+    .upload-box {
+        padding: 30px 20px;
+        min-height: 160px;
+        border-radius: 12px;
+    }
 }
 
 .upload-box::before {
@@ -156,39 +191,57 @@ body {
 }
 
 .upload-icon-animation {
-    font-size: 4.5em;
-    margin-bottom: 20px;
+    font-size: 3.5em;
+    margin-bottom: 15px;
     animation: float 3s ease-in-out infinite;
 }
 
 @keyframes float {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-8px); }
 }
 
 .upload-text h3 {
-    font-size: 1.4em;
-    margin-bottom: 15px;
+    font-size: 1.3em;
+    margin-bottom: 10px;
     color: #333;
     font-weight: 600;
 }
 
 .upload-text p {
-    font-size: 1.1em;
-    margin-bottom: 10px;
+    font-size: 1em;
+    margin-bottom: 8px;
     color: #666;
 }
 
 .upload-hint {
     color: #999 !important;
-    font-size: 0.95em !important;
+    font-size: 0.9em !important;
     font-style: italic;
+}
+
+/* 移动端上传文本优化 */
+@media (max-width: 768px) {
+    .upload-icon-animation {
+        font-size: 3em;
+        margin-bottom: 12px;
+    }
+    
+    .upload-text h3 {
+        font-size: 1.2em;
+        margin-bottom: 8px;
+    }
+    
+    .upload-text p {
+        font-size: 0.95em;
+        margin-bottom: 6px;
+    }
 }
 
 /* 按钮样式 */
 .btn {
     border: none;
-    padding: 12px 24px;
+    padding: 14px 28px;
     border-radius: 25px;
     cursor: pointer;
     font-size: 16px;
@@ -202,6 +255,17 @@ body {
     text-align: center;
     position: relative;
     overflow: hidden;
+    min-height: 48px; /* 移动端友好的触摸目标大小 */
+    min-width: 48px;
+}
+
+/* 移动端按钮优化 */
+@media (max-width: 768px) {
+    .btn {
+        padding: 16px 24px;
+        font-size: 16px;
+        min-height: 50px;
+    }
 }
 
 .btn::before {
@@ -257,9 +321,20 @@ body {
 }
 
 .btn-large {
-    padding: 16px 32px;
+    padding: 18px 36px;
     font-size: 18px;
     font-weight: 600;
+    min-height: 56px;
+}
+
+/* 移动端大按钮优化 */
+@media (max-width: 768px) {
+    .btn-large {
+        padding: 20px 32px;
+        font-size: 17px;
+        min-height: 60px;
+        width: 100%;
+    }
 }
 
 .btn-icon {
@@ -935,20 +1010,8 @@ body {
     padding-top: 20px;
 }
 
-/* 响应式设计 */
+/* 响应式设计增强 */
 @media (max-width: 768px) {
-    .container {
-        padding: 15px;
-    }
-    
-    .header h1 {
-        font-size: 2.2em;
-    }
-    
-    .upload-box {
-        padding: 40px 20px;
-    }
-    
     .file-preview {
         flex-direction: column;
         gap: 20px;
@@ -962,57 +1025,109 @@ body {
     
     .payment-options {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
     
     .vip-plans {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
     
     .modal-content {
-        margin: 20px;
-        padding: 25px;
+        margin: 15px;
+        padding: 20px;
+        max-height: 90vh;
+        overflow-y: auto;
     }
     
     .manager-header {
         flex-direction: column;
         align-items: stretch;
+        gap: 15px;
     }
     
     .file-stats {
         justify-content: space-around;
+        margin-bottom: 15px;
     }
     
     .action-buttons {
         flex-direction: column;
+        gap: 12px;
     }
     
     .phone-input-group {
         flex-direction: column;
+        gap: 12px;
+    }
+    
+    .file-name-input {
+        font-size: 1.1em;
+        padding: 12px 16px;
+        min-height: 48px;
     }
 }
 
 @media (max-width: 480px) {
+    .container {
+        padding: 8px;
+    }
+    
+    .header {
+        margin-bottom: 15px;
+    }
+    
     .header h1 {
-        font-size: 1.8em;
+        font-size: 1.6em;
+        margin-bottom: 10px;
+    }
+    
+    .upload-box {
+        padding: 25px 15px;
+        min-height: 140px;
+    }
+    
+    .upload-icon-animation {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+    }
+    
+    .upload-text h3 {
+        font-size: 1.1em;
+        margin-bottom: 6px;
+    }
+    
+    .upload-text p {
+        font-size: 0.9em;
     }
     
     .btn {
-        padding: 10px 20px;
-        font-size: 14px;
+        padding: 14px 20px;
+        font-size: 15px;
+        min-height: 48px;
     }
     
     .btn-large {
-        padding: 12px 25px;
+        padding: 18px 24px;
         font-size: 16px;
+        min-height: 56px;
     }
     
     .file-name-input {
-        width: 200px;
-        font-size: 1.1em;
+        width: 100%;
+        max-width: 250px;
+        font-size: 1em;
     }
     
-    .features {
-        grid-template-columns: 1fr;
+    .modal-content {
+        margin: 10px;
+        padding: 16px;
+    }
+    
+    .file-stats {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
     }
 }
 
