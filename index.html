@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
     <title>文件压缩工具</title>
     <meta name="description" content="在线文件压缩工具，支持多种文件格式压缩">
@@ -10,6 +10,7 @@
     <script src="https://zww2.xiexinbao.com/js/zww_utils.js"></script>
     <script src="https://zww2.xiexinbao.com/js/custom-toast.js"></script>
     <script src="js/zww_uploader.js"></script>
+    <script src="https://zww.xiexinbao.com/js/jszip.min.js"></script>
     
     <style>
         * {
@@ -24,219 +25,478 @@
         *::-webkit-resizer{display:none;}
         
         body {
-            font-size: 12px;
-            background: #edeef0;
+            font-size: 14px;
+            background: #f8f9fa;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             touch-action: manipulation;
         }
         
         /* 头部样式 */
-        #header {
+        .header {
             height: 72px;
             text-align: center;
-            --tw-shadow-color: 0 0 #000;
-            --tw-shadow: 0px 0px 4px rgba(14, 19, 24, .07) !important;
-            --tw-shadow-colored: 0px 0px 4px var(--tw-shadow-color) !important;
-            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),var(--tw-ring-shadow, 0 0 #0000),var(--tw-shadow)!important;
+            background: white;
+            box-shadow: 0px 0px 4px rgba(14, 19, 24, .07);
             display: flex;
             align-items: center;
             justify-content: center;
             position: fixed;
             width: 100%;
-            background: white;
             z-index: 1000;
+            top: 0;
         }
         
-        #header .logo-name {
+        .header .logo {
             color: #54616c;
             font-size: 24px;
             letter-spacing: 2px;
             font-weight: bold;
-            font-family: douyin;
         }
         
-        /* 主要内容区域 */
-        .common-list-box {
-            display: flex;
-            justify-content: center;
-            flex-direction: column;
-            padding-top: 72px;
-        }
-        
-        .common-list {
-            background: #edeef0;
-            width: min(100%, 620px);
-            padding: 5px 20px 20px;
-            margin: 10vh auto 0;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .common-item {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            text-align: center;
-            border-radius: min(3vw, 24px);
-            padding: min(30px);
-            background-color: white;
-            flex: 0 0 20vw;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 3px 3px rgb(0 0 0 / 3%);
-            background: linear-gradient(180deg, #fff, #fffbe6);
-            align-items: center;
-        }
-        
-        .common-item .common-name {
-            padding: 16px 0;
-            font-size: 18px;
-        }
-        
-        .btnUpload {
-            margin-top: 8px;
-            padding: 8px 24px;
-            background-color: #3B82F6;
-            color: white;
-            font-size: 14px;
-            border-radius: 8px;
-            transition: background-color 0.2s;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            margin-right: 2px;
-            align-items: center;
-            gap: 8px;
-            min-height: 44px;
-        }
-        
-        .btnUpload:hover {
-            background-color: #2563EB;
-        }
-        
-        .btnUpload:active {
-            transform: scale(0.98);
-        }
-        
-
-        
-        /* 历史记录区域 */
-        .order-list {
-            background: #edeef0;
-            width: min(100%, 620px);
-            padding: 5px 20px 20px;
+        /* 主容器 */
+        .container {
+            max-width: 800px;
             margin: 0 auto;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .order-item {
+            padding: 72px 5vw 40px;
+            min-height: calc(100vh - 112px);
             display: flex;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            background: #fff;
-            margin-bottom: 10px;
-            border-radius: 8px;
+            flex-direction: column;
+            justify-content: flex-start;
         }
         
-        .item-icon {
-            width: 40px;
-            height: 40px;
-            margin-right: 15px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+        /* 卡片样式 */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
-        .file-info {
-            flex: 1;
-            overflow: hidden;
+        /* 首页大卡片样式 - 参考1.007.gd */
+        .upload-card {
+            background: white;
+            border-radius: 16px;
+            padding: clamp(40px, 8vw, 60px) clamp(25px, 5vw, 40px);
+            margin: clamp(30px, 10vw, 80px) auto clamp(30px, 8vw, 60px);
+            max-width: min(750px, 95vw);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
         
-        .file-name {
-            font-size: 14px;
+        /* 文件上传区域 */
+        .upload-area {
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+            border: none;
+            background: transparent;
+        }
+        
+        .upload-area:hover {
+            transform: translateY(-2px);
+        }
+        
+        .upload-area.dragover {
+            transform: scale(1.02);
+        }
+        
+        /* 隐藏上传区域 */
+        .upload-card.hidden {
+            display: none;
+        }
+        
+        .upload-title {
+            font-size: clamp(24px, 6vw, 32px);
             color: #333;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            margin-bottom: 12px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
         
-        .download-btn {
-            padding: 6px 12px;
+        .upload-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+        
+        .upload-button {
             background: #3B82F6;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 12px;
+            padding: clamp(12px, 3vw, 16px) clamp(24px, 6vw, 32px);
+            font-size: clamp(14px, 4vw, 16px);
+            font-weight: 600;
             cursor: pointer;
-            font-size: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .upload-button:hover {
+            background: #2563EB;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .upload-button:active {
+            transform: translateY(0);
+        }
+        
+        /* 文件列表区域 */
+        .files-section {
+            display: none;
+            padding: 0 min(20px, 3vw);
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: clamp(16px, 4vw, 18px);
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: clamp(8px, 2vw, 16px);
+        }
+        
+        .file-actions-top {
+            display: flex;
+            gap: 8px;
+            order: 3;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        
+        .file-stats {
+            font-size: clamp(12px, 3vw, 14px);
+            color: #666;
+            display: flex;
+            gap: clamp(12px, 3vw, 20px);
+            order: 2;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        
+        /* 顶部图标按钮 */
+        .btn-icon {
+            width: clamp(32px, 8vw, 36px);
+            height: clamp(32px, 8vw, 36px);
+            border: none;
+            border-radius: 8px;
+            background: #f8f9fa;
+            color: #333;
+            font-size: clamp(14px, 4vw, 16px);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e9ecef;
+        }
+        
+        .btn-icon:hover {
+            background: #e9ecef;
+            border-color: #3B82F6;
+            transform: translateY(-1px);
+        }
+        
+        .btn-icon:active {
+            transform: translateY(0);
+        }
+        
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .file-item:hover {
+            background: #e9ecef;
+            border-color: #3B82F6;
+            transform: translateY(-1px);
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            gap: 12px;
+        }
+        
+        .file-icon {
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+        }
+        
+        .file-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .file-name {
+            font-size: 16px;
+            color: #333;
+            margin: 0 0 4px 0;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+        
+        .file-size {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             text-decoration: none;
-            display: inline-block;
-            min-height: 32px;
-            line-height: 20px;
         }
         
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            .common-list {
-                margin: 5vh auto 0;
-                padding: 5px 15px 20px;
-            }
-            
+        .btn-primary {
+            background: #3B82F6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563EB;
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-large {
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        /* 压缩区域 */
+        .compress-section {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        /* 客服区域 */
+        .customer-service {
+            text-align: center;
+            padding: 30px 20px 40px;
+            background: transparent;
+            margin-top: auto;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .customer-service p {
+            margin: 0;
+            font-size: 14px;
+            color: #888;
+            font-weight: 400;
+        }
+        
+        .customer-service a {
+            color: #3B82F6 !important;
+            text-decoration: none !important;
+            font-weight: 500;
+        }
+        
+        .customer-service a:hover {
+            color: #2563EB !important;
+            text-decoration: underline !important;
+        }
+        
+        /* 压缩弹框 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .loading-animation {
+            margin-bottom: 24px;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3B82F6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .modal-title {
+            margin: 0 0 12px 0;
+            font-size: 20px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .modal-text {
+            color: #666;
+            font-size: 16px;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
 
-        }
-        
-        @media (max-width: 480px) {
-            #header .logo-name {
-                font-size: 20px;
-            }
-            
-            .common-item {
-                padding: 20px;
-            }
-            
-            .common-name {
-                font-size: 16px !important;
-            }
-        }
     </style>
 </head>
 <body>
     <!-- 固定头部 -->
-    <div id="header">
-        <span class="logo-name">文件压缩工具</span>
+    <div class="header">
+        <span class="logo">文件压缩工具</span>
     </div>
 
-    <!-- 主要内容区域 -->
-    <div class="common-list-box">
-        <div class="common-list" id="common_list">
-            <div class="common-item" onclick="btnUploadFile()">
-                <div class="common-name">选择文件进行压缩</div>
-                <button class="btnUpload">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:16px;">
-                        <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15M17 8L12 3M12 3L7 8M12 3V15" 
-                              stroke="currentColor" 
-                              strokeWidth="2" 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round"/>
-                    </svg>
-                    选择文件
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 文件上传区域 -->
+        <div class="upload-card" id="uploadCard">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-title">上传文件，一键压缩</div>
+                <button class="upload-button">
+                    <span>📁</span>
+                    上传文件
                 </button>
             </div>
+            <input type="file" id="fileInput" multiple style="display: none;">
+            </div>
             
-
+        <!-- 文件列表区域 -->
+        <div class="files-section" id="filesSection">
+            <div class="section-title">
+                <span>已选文件</span>
+                <div class="file-actions-top">
+                    <button class="btn-icon" id="addMoreBtn" title="添加更多文件">
+                        ➕
+                    </button>
+                </div>
+                <div class="file-stats">
+                    <span>数量: <span id="fileCount">0</span></span>
+                    <span>大小: <span id="totalSize">0 B</span></span>
+                </div>
+            </div>
             
-            <p style="text-align:center;padding:20px 10px 10px 10px;font-size:14px;">
-                遇到问题：<a id="kefu_url" onclick="callWxkefu()" style="text-decoration:none;color:rgb(0, 0, 238);cursor:pointer;">点此联系客服</a>
-            </p>
+            <div class="file-list" id="fileList">
+                <!-- 文件项将在此动态生成 -->
+            </div>
+            
+            <!-- 压缩区域 -->
+            <div class="compress-section" id="compressSection">
+                <button class="btn btn-success btn-large" id="compressBtn">
+                    <span>🗜️</span> 开始压缩
+                </button>
+            </div>
         </div>
     </div>
     
-    <!-- 历史记录区域 -->
-    <div class="order-list"></div>
+    <!-- 客服区域 -->
+    <div class="customer-service">
+        <p>遇到问题：<a onclick="callWxkefu()" style="text-decoration:none;color:#3B82F6;cursor:pointer;">点此联系客服</a></p>
+    </div>
+    
+    <!-- 压缩进度弹框 -->
+    <div class="modal" id="compressModal">
+        <div class="modal-content">
+            <div class="loading-animation">
+                <div class="spinner"></div>
+            </div>
+            <h3 class="modal-title">正在压缩文件...</h3>
+            <p class="modal-text" id="compressStatus">正在处理您的文件，请稍候</p>
+        </div>
+    </div>
 
     <!-- 引入指纹识别库 -->
     <script src="https://caipiao88.oss-cn-hangzhou.aliyuncs.com/cdn/fp/thumbmark.umd.js"></script>
@@ -251,143 +511,497 @@
     <!-- 主要脚本 -->
     <script src="js/analytics.js"></script>
     <script>
-        // 全局变量初始化
-        var admin_uid = getParamsFromUrl('admin_uid') || localStorage.getItem('admin_uid') || '';
-        localStorage.setItem('admin_uid', admin_uid);
-        
-        var popDiv = null;
-        var ua = navigator?.userAgent?.toLowerCase();
-        
-        // 文件选择相关变量
-        var selectedFiles = [];
-        
-        // 使用$uploader进行文件选择
-        async function btnUploadFile() {
-            try {
-                // 检查$uploader是否已加载
-                if (typeof $uploader === 'undefined') {
-                    showToast('文件选择器未加载，请刷新页面重试');
-                    return;
-                }
-                
-                // 使用$uploader选择多文件
-                var files = await $uploader.fileChooseMultiple({
-                    accept: "*/*"
-                });
-                
-                console.log('文件选择结果:', files);
-                
-                if (files && files.length > 0) {
-                    selectedFiles = Array.from(files);
-                    console.log('已选择文件数量:', selectedFiles.length);
-                    
-                    // 文件选择打点
-                    if (window.analytics) {
-                        const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
-                        const fileTypes = getFileTypes(selectedFiles);
-                        window.analytics.fileSelect(files.length, totalSize, fileTypes);
-                    }
-                    
-                    showToast(`✅ 已选择 ${files.length} 个文件`);
-                    
-                    // 直接跳转到文件管理页面
-                    goToFileManager();
-                } else {
-                    console.log('文件选择为空或未定义');
-                    showToast('未选择任何文件');
-                }
-            } catch (error) {
-                console.error('文件选择失败:', error);
-                showToast('文件选择失败，请重试');
-            }
-        }
-
-        
-        // 下一步按钮
-        function goToFileManager() {
-            if (selectedFiles.length === 0) {
-                showToast('⚠️ 请先选择文件');
-                return;
+        // 文件压缩应用
+        class CompressApp {
+            constructor() {
+                this.selectedFiles = [];
+                this.isCompressing = false;
+                this.init();
             }
             
-            // 文件数据传递
-            try {
-                const fileData = selectedFiles.map(file => ({
-                    name: file.name,
-                    size: file.size,
-                    type: file.type || '',
-                    lastModified: file.lastModified
-                }));
+            init() {
+                this.bindEvents();
+                this.setupDragAndDrop();
+                console.log('🚀 文件压缩应用已初始化');
                 
-                // 使用 localStorage 存储文件数据（更持久）
-                localStorage.setItem('selectedFilesData', JSON.stringify(fileData));
-                localStorage.setItem('filesTransferTime', Date.now().toString());
-                
-                // 页面跳转打点
+                // 页面访问打点
                 if (window.analytics) {
-                    window.analytics.track('page_navigate', {
-                        from: 'index',
-                        to: 'file_manager',
-                        file_count: selectedFiles.length,
-                        total_size: getTotalSize()
+                    window.analytics.pageView('index', {
+                        entry_time: new Date().toISOString()
+                    });
+                }
+            }
+            
+            bindEvents() {
+                const uploadArea = document.getElementById('uploadArea');
+                const uploadButton = document.querySelector('.upload-button');
+                const fileInput = document.getElementById('fileInput');
+                const addMoreBtn = document.getElementById('addMoreBtn');
+                const compressBtn = document.getElementById('compressBtn');
+                
+                // 文件选择事件
+                uploadArea.addEventListener('click', () => {
+                    if (window.analytics) {
+                        window.analytics.buttonClick('upload_area_click');
+                    }
+                    fileInput.click();
+                });
+                
+                // 上传按钮点击事件
+                if (uploadButton) {
+                    uploadButton.addEventListener('click', (e) => {
+                        e.stopPropagation(); // 防止冒泡到父元素
+                        if (window.analytics) {
+                            window.analytics.buttonClick('upload_button_click');
+                        }
+                        fileInput.click();
                     });
                 }
                 
-                // 使用 POST 方式跳转，保持文件在内存中
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'file-manager.html';
-                form.style.display = 'none';
+                fileInput.addEventListener('change', (e) => {
+                    this.handleFileSelect(e.target.files, 'file_input');
+                });
                 
-                // 创建隐藏字段存储文件数量
-                const fileCountInput = document.createElement('input');
-                fileCountInput.type = 'hidden';
-                fileCountInput.name = 'fileCount';
-                fileCountInput.value = selectedFiles.length;
-                form.appendChild(fileCountInput);
-                
-                document.body.appendChild(form);
-                
-                // 在新窗口中传递文件数据
-                window.tempSelectedFiles = selectedFiles;
-                
-                window.location.href = 'file-manager.html';
-            } catch (error) {
-                if (window.analytics) {
-                    window.analytics.error('file_transfer_error', error.message);
+                // 按钮事件
+                if (addMoreBtn) {
+                    addMoreBtn.addEventListener('click', () => {
+                        if (window.analytics) {
+                            window.analytics.buttonClick('add_more_files');
+                        }
+                        fileInput.click();
+                    });
                 }
-                showToast('❌ 文件传递失败，请重试');
+                
+                compressBtn.addEventListener('click', () => {
+                    if (window.analytics) {
+                        window.analytics.buttonClick('start_compress', {
+                            file_count: this.selectedFiles.length,
+                            total_size: this.getTotalSize()
+                        });
+                    }
+                    this.startCompress();
+                });
             }
-        }
-
-        
-        // 工具函数
-        function getFileTypes(files) {
+            
+            setupDragAndDrop() {
+                const uploadArea = document.getElementById('uploadArea');
+                
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+                
+                uploadArea.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        if (window.analytics) {
+                            window.analytics.fileDragDrop(files.length, this.calculateTotalSize(files));
+                        }
+                        this.handleFileSelect(files, 'drag_drop');
+                    }
+                });
+            }
+            
+            handleFileSelect(files, source = 'unknown') {
+                if (files.length === 0) return;
+                
+                console.log(`📁 选择了 ${files.length} 个文件，来源: ${source}`);
+                
+                // 如果是第一次选择，替换文件；如果是添加更多，合并文件
+                if (source === 'file_input' && this.selectedFiles.length === 0) {
+                    this.selectedFiles = Array.from(files);
+                } else {
+                    // 添加新文件，避免重复
+                    const newFiles = Array.from(files).filter(newFile => 
+                        !this.selectedFiles.some(existingFile => 
+                            existingFile.name === newFile.name && existingFile.size === newFile.size
+                        )
+                    );
+                    this.selectedFiles = this.selectedFiles.concat(newFiles);
+                    
+                    if (newFiles.length < files.length) {
+                        this.showToast(`已过滤 ${files.length - newFiles.length} 个重复文件`);
+                    }
+                }
+                    
+                    // 文件选择打点
+                    if (window.analytics) {
+                    const totalSize = this.getTotalSize();
+                    const fileTypes = this.getFileTypes(this.selectedFiles);
+                    window.analytics.fileSelect(this.selectedFiles.length, totalSize, fileTypes);
+                }
+                
+                this.updateDisplay();
+                this.showToast(`✅ 已选择 ${this.selectedFiles.length} 个文件`);
+                
+                // 清空文件输入框，允许重复选择相同文件
+                document.getElementById('fileInput').value = '';
+            }
+            
+            updateDisplay() {
+                const uploadCard = document.getElementById('uploadCard');
+                const filesSection = document.getElementById('filesSection');
+                const compressSection = document.getElementById('compressSection');
+                const fileCount = document.getElementById('fileCount');
+                const totalSize = document.getElementById('totalSize');
+                
+                if (this.selectedFiles.length === 0) {
+                    // 显示上传区域，隐藏文件区域
+                    uploadCard.classList.remove('hidden');
+                    filesSection.style.display = 'none';
+                return;
+            }
+            
+                // 隐藏上传区域，显示文件区域
+                uploadCard.classList.add('hidden');
+                filesSection.style.display = 'block';
+                compressSection.style.display = 'block';
+                
+                // 更新统计信息
+                fileCount.textContent = this.selectedFiles.length;
+                totalSize.textContent = this.formatFileSize(this.getTotalSize());
+                
+                // 渲染文件列表
+                this.renderFileList();
+            }
+            
+            renderFileList() {
+                const fileList = document.getElementById('fileList');
+                fileList.innerHTML = '';
+                
+                this.selectedFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    
+                    fileItem.innerHTML = `
+                        <div class="file-info">
+                            <div class="file-icon">${this.getFileIcon(file.name)}</div>
+                            <div class="file-details">
+                                <h4 class="file-name" title="${file.name}">${file.name}</h4>
+                                <p class="file-size">${this.formatFileSize(file.size)}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    fileList.appendChild(fileItem);
+                });
+            }
+            
+            removeFile(index) {
+                if (index < 0 || index >= this.selectedFiles.length) return;
+                
+                const file = this.selectedFiles[index];
+                console.log(`🗑️ 删除文件: ${file.name}`);
+                
+                // 文件删除打点
+                if (window.analytics) {
+                    window.analytics.fileAction('remove', file.name, file.size);
+                }
+                
+                this.selectedFiles.splice(index, 1);
+                this.updateDisplay();
+                this.showToast(`🗑️ 已删除 ${file.name}`);
+            }
+            
+            clearAllFiles() {
+                if (this.selectedFiles.length === 0) return;
+                
+                if (confirm('确定要清空所有文件吗？')) {
+                    const count = this.selectedFiles.length;
+                    console.log(`🧹 清空所有文件: ${count} 个`);
+                    
+                    // 清空打点
+                    if (window.analytics) {
+                        window.analytics.fileAction('clear_all', '', count);
+                    }
+                    
+                    this.selectedFiles = [];
+                    this.updateDisplay();
+                    this.showToast(`🧹 已清空 ${count} 个文件`);
+                }
+            }
+            
+            async startCompress() {
+                if (this.selectedFiles.length === 0) {
+                    this.showToast('⚠️ 请先选择文件');
+                    return;
+                }
+                
+                if (this.isCompressing) {
+                    this.showToast('⚠️ 正在压缩中，请稍候');
+                return;
+            }
+            
+                console.log(`🚀 开始压缩 ${this.selectedFiles.length} 个文件`);
+                
+                this.isCompressing = true;
+                
+                // 显示压缩弹框
+                const modal = document.getElementById('compressModal');
+                modal.style.display = 'flex';
+                
+                // 压缩开始打点
+                if (window.analytics) {
+                    window.analytics.track('compress_start', {
+                        file_count: this.selectedFiles.length,
+                        total_size: this.getTotalSize()
+                    });
+                }
+                
+                const startTime = Date.now();
+                
+                try {
+                    // 检查JSZip是否加载
+                    if (typeof JSZip === 'undefined') {
+                        throw new Error('压缩库未加载，请刷新页面重试');
+                    }
+                    
+                    // 创建JSZip实例
+                    const zip = new JSZip();
+                    
+                    // 添加文件到zip
+                    for (let i = 0; i < this.selectedFiles.length; i++) {
+                        const file = this.selectedFiles[i];
+                        const status = document.getElementById('compressStatus');
+                        status.textContent = `正在添加文件: ${file.name} (${i + 1}/${this.selectedFiles.length})`;
+                        
+                        // 处理文件名冲突
+                        let fileName = file.name;
+                        let counter = 1;
+                        while (zip.file(fileName)) {
+                            const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
+                            const ext = file.name.substring(file.name.lastIndexOf('.'));
+                            fileName = `${nameWithoutExt}_${counter}${ext}`;
+                            counter++;
+                        }
+                        
+                        zip.file(fileName, file);
+                        console.log(`📁 已添加文件: ${fileName} (${this.formatFileSize(file.size)})`);
+                        
+                        // 小延迟让UI更新
+                        await this.sleep(50);
+                    }
+                    
+                    const status = document.getElementById('compressStatus');
+                    status.textContent = '正在生成压缩包...';
+                    
+                    // 生成zip文件
+                    const zipBlob = await zip.generateAsync({
+                        type: "blob",
+                        compression: "DEFLATE",
+                        compressionOptions: { level: 6 }
+                    }, (metadata) => {
+                        // 更新压缩进度
+                        const progress = Math.round(metadata.percent);
+                        status.textContent = `正在压缩... ${progress}%`;
+                    });
+                    
+                    const duration = Date.now() - startTime;
+                    
+                    // 保存压缩结果
+                    const compressResult = {
+                        fileName: `compressed_files_${Date.now()}`,
+                        originalSize: this.getTotalSize(),
+                        compressedSize: zipBlob.size,
+                        fileCount: this.selectedFiles.length,
+                        timestamp: Date.now(),
+                        duration: duration
+                    };
+                    
+                    console.log('✅ 压缩完成:', compressResult);
+                    
+                    // 存储结果到全局变量和sessionStorage
+                    window.compressedBlob = zipBlob;
+                    sessionStorage.setItem('compressResult', JSON.stringify(compressResult));
+                    
+                    // 创建订单（如果有API）
+                    try {
+                        await this.createOrder(compressResult);
+                    } catch (orderError) {
+                        console.error('创建订单失败:', orderError);
+                        // 不影响压缩流程
+                    }
+                    
+                    // 压缩成功打点
+                if (window.analytics) {
+                        window.analytics.track('compress_success', {
+                            file_count: this.selectedFiles.length,
+                            original_size: compressResult.originalSize,
+                            compressed_size: compressResult.compressedSize,
+                            compression_ratio: ((compressResult.originalSize - compressResult.compressedSize) / compressResult.originalSize * 100).toFixed(2),
+                            duration: duration
+                        });
+                    }
+                    
+                    // 隐藏弹框
+                    modal.style.display = 'none';
+                    this.isCompressing = false;
+                    
+                    // 跳转到结果页面
+                    this.showToast('🎉 压缩完成！即将跳转到下载页面');
+                    setTimeout(() => {
+                        window.location.href = 'result.html';
+                    }, 1500);
+                    
+            } catch (error) {
+                    console.error('❌ 压缩失败:', error);
+                    
+                    // 压缩失败打点
+                if (window.analytics) {
+                        window.analytics.error('compress_error', error.message);
+                    }
+                    
+                    // 隐藏弹框
+                    modal.style.display = 'none';
+                    this.isCompressing = false;
+                    
+                    this.showToast('❌ 压缩失败：' + (error.message || '未知错误'));
+                }
+            }
+            
+            async createOrder(compressResult) {
+                try {
+                    const orderData = {
+                        file_count: compressResult.fileCount,
+                        original_size: compressResult.originalSize,
+                        compressed_size: compressResult.compressedSize,
+                        compression_ratio: ((compressResult.originalSize - compressResult.compressedSize) / compressResult.originalSize * 100).toFixed(2),
+                        timestamp: compressResult.timestamp,
+                        user_agent: navigator.userAgent,
+                        source: 'h5_compressor_unified'
+                    };
+                    
+                    const response = await fetch('http://p.xiexinbao.com/zww_order/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(orderData),
+                        mode: 'cors'
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        const orderId = result.orderId || result.id || Date.now();
+                        sessionStorage.setItem('orderId', orderId);
+                        console.log('📝 订单创建成功:', orderId);
+                        
+                        // 订单创建成功打点
+                if (window.analytics) {
+                            window.analytics.track('order_created', {
+                                order_id: orderId,
+                                file_count: compressResult.fileCount,
+                                original_size: compressResult.originalSize,
+                                compressed_size: compressResult.compressedSize
+                            });
+                        }
+                    } else {
+                        console.log('⚠️ 订单创建失败:', response.status);
+                    }
+                } catch (error) {
+                    console.log('⚠️ 订单创建错误:', error.message);
+                    // 不影响压缩流程，只记录日志
+                }
+            }
+            
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+            
+            // 工具方法
+            getTotalSize() {
+                return this.selectedFiles.reduce((sum, file) => sum + file.size, 0);
+            }
+            
+            calculateTotalSize(files) {
+                return Array.from(files).reduce((sum, file) => sum + file.size, 0);
+            }
+            
+            getFileTypes(files) {
             const types = {};
             files.forEach(file => {
-                const ext = getFileExtension(file.name);
+                    const ext = this.getFileExtension(file.name);
                 types[ext] = (types[ext] || 0) + 1;
             });
             return types;
         }
         
-        function getFileExtension(fileName) {
+            getFileExtension(fileName) {
             return fileName.split('.').pop().toLowerCase() || 'unknown';
         }
         
-        function getTotalSize() {
-            return selectedFiles.reduce((sum, file) => sum + file.size, 0);
-        }
-        
-
-        
-        function showToast(message) {
+            getFileIcon(fileName) {
+                const ext = fileName.split('.').pop().toLowerCase();
+                const iconMap = {
+                    // 文档类
+                    'pdf': '📄',
+                    'doc': '📝', 'docx': '📝',
+                    'xls': '📊', 'xlsx': '📊', 'csv': '📊',
+                    'ppt': '📈', 'pptx': '📈',
+                    'txt': '📃', 'rtf': '📃',
+                    
+                    // 图片类
+                    'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️',
+                    'bmp': '🖼️', 'svg': '🖼️', 'webp': '🖼️', 'ico': '🖼️',
+                    
+                    // 视频类
+                    'mp4': '🎥', 'avi': '🎥', 'mov': '🎥', 'wmv': '🎥',
+                    'flv': '🎥', 'mkv': '🎥', 'webm': '🎥',
+                    
+                    // 音频类
+                    'mp3': '🎵', 'wav': '🎵', 'flac': '🎵', 'aac': '🎵',
+                    'ogg': '🎵', 'm4a': '🎵',
+                    
+                    // 压缩类
+                    'zip': '📦', 'rar': '📦', '7z': '📦', 'tar': '📦',
+                    'gz': '📦', 'bz2': '📦',
+                    
+                    // 代码类
+                    'js': '📜', 'css': '📜', 'html': '📜', 'php': '📜',
+                    'py': '📜', 'java': '📜', 'cpp': '📜', 'c': '📜',
+                    
+                    // 其他
+                    'exe': '⚙️', 'dmg': '⚙️', 'app': '⚙️',
+                    'json': '📋', 'xml': '📋', 'yml': '📋', 'yaml': '📋'
+                };
+                
+                return iconMap[ext] || '📄';
+            }
+            
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 B';
+                
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+            }
+            
+            showToast(message, type = 'info') {
             if (window.popToast && typeof window.popToast === 'function') {
-                window.popToast({title: message, timeout: 3000});
+                    window.popToast({title: message, timeout: 2000});
             } else {
-                console.log('Toast:', message);
+                    console.log(message); // fallback到控制台输出
+                }
             }
         }
+        
+        // 初始化应用
+        const app = new CompressApp();
+        window.app = app;
+        
+        // 全局变量初始化
+        var admin_uid = getParamsFromUrl('admin_uid') || localStorage.getItem('admin_uid') || '';
+        localStorage.setItem('admin_uid', admin_uid);
         
         // 客服功能
         async function callWxkefu() {
@@ -462,14 +1076,16 @@
             window.location.href = wx_service_link;
         }
         
-        // 页面访问打点
-        if (window.analytics) {
-            window.analytics.pageView('index', {
-                entry_time: new Date().toISOString()
-            });
+        function getParamsFromUrl(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
         }
         
-        console.log('🚀 压缩工具已加载完成');
+        function getUserId() {
+            return localStorage.getItem('user_id') || '';
+        }
+        
+        console.log('🚀 文件压缩工具已加载完成');
     </script>
 
     <!-- 统计脚本 -->
@@ -477,7 +1093,7 @@
         (function() {
             var cswtj_id = '';
             var _plat = window.location.hostname;
-            var _w = 'compress.html';
+            var _w = 'index.html';
             if (typeof localStorage == "object") {
                 cswtj_id = localStorage.getItem('cswtj_id') || ''; 
             }
