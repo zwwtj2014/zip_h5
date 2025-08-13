@@ -57,7 +57,7 @@
         .container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 72px 5vw 40px;
+            padding: 72px 5vw 0;
             min-height: calc(100vh - 112px);
             display: flex;
             flex-direction: column;
@@ -78,7 +78,7 @@
             background: white;
             border-radius: 16px;
             padding: clamp(40px, 8vw, 60px) clamp(25px, 5vw, 40px);
-            margin: clamp(30px, 10vw, 80px) auto clamp(30px, 8vw, 60px);
+            margin-top: clamp(30px, 10vw, 80px);
             max-width: min(750px, 95vw);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             border: 1px solid rgba(0, 0, 0, 0.05);
@@ -151,8 +151,7 @@
         /* 文件列表区域 */
         .files-section {
             display: none;
-            padding: 0 min(20px, 3vw);
-            margin-bottom: 20px;
+            margin-top: 10px;
         }
         
         .section-title {
@@ -225,7 +224,7 @@
             background: #f8f9fa;
             border-radius: 12px;
             transition: all 0.3s ease;
-            border: 1px solid transparent;
+            border: 1px solid #ddd;
         }
         
         .file-item:hover {
@@ -270,6 +269,39 @@
             display: flex;
             gap: 8px;
             align-items: center;
+        }
+        
+        .file-action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            background: #f8f9fa;
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e9ecef;
+        }
+        
+        .file-action-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+        
+        .file-action-btn.delete:hover {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+        
+        .file-action-btn.rename:hover {
+            background: #ffc107;
+            color: white;
+            border-color: #ffc107;
         }
         
         /* 按钮样式 */
@@ -347,9 +379,7 @@
         /* 客服区域 */
         .customer-service {
             text-align: center;
-            padding: 30px 20px 40px;
             background: transparent;
-            margin-top: auto;
             min-height: 60px;
             display: flex;
             align-items: center;
@@ -689,6 +719,14 @@
                                 <p class="file-size">${this.formatFileSize(file.size)}</p>
                             </div>
                         </div>
+                        <div class="file-actions">
+                            <button class="file-action-btn rename" title="重命名" onclick="app.renameFile(${index})">
+                                ✏️
+                            </button>
+                            <button class="file-action-btn delete" title="删除文件" onclick="app.removeFile(${index})">
+                                🗑️
+                            </button>
+                        </div>
                     `;
                     
                     fileList.appendChild(fileItem);
@@ -709,6 +747,46 @@
                 this.selectedFiles.splice(index, 1);
                 this.updateDisplay();
                 this.showToast(`🗑️ 已删除 ${file.name}`);
+            }
+            
+            renameFile(index) {
+                if (index < 0 || index >= this.selectedFiles.length) return;
+                
+                const file = this.selectedFiles[index];
+                const currentName = file.name;
+                const dotIndex = currentName.lastIndexOf('.');
+                const nameWithoutExt = dotIndex > 0 ? currentName.substring(0, dotIndex) : currentName;
+                const extension = dotIndex > 0 ? currentName.substring(dotIndex) : '';
+                
+                const newName = prompt('请输入新的文件名（不包含后缀）:', nameWithoutExt);
+                
+                if (newName && newName.trim() && newName.trim() !== nameWithoutExt) {
+                    const finalName = newName.trim() + extension;
+                    
+                    // 检查是否有重复文件名
+                    const hasDuplicate = this.selectedFiles.some((f, i) => 
+                        i !== index && f.name === finalName
+                    );
+                    
+                    if (hasDuplicate) {
+                        this.showToast('❌ 文件名已存在');
+                        return;
+                    }
+                    
+                    // 创建新的File对象
+                    const newFile = new File([file], finalName, { type: file.type });
+                    this.selectedFiles[index] = newFile;
+                    
+                    console.log(`✏️ 文件重命名: ${currentName} → ${finalName}`);
+                    
+                    // 文件重命名打点
+                    if (window.analytics) {
+                        window.analytics.fileAction('rename', finalName, file.size);
+                    }
+                    
+                    this.updateDisplay();
+                    this.showToast(`✏️ 已重命名为 ${finalName}`);
+                }
             }
             
             clearAllFiles() {
@@ -845,12 +923,7 @@
                     modal.style.display = 'none';
                     this.isCompressing = false;
                     
-                    // 跳转到结果页面
-                    this.showToast('🎉 压缩完成！即将跳转到下载页面');
-                    setTimeout(() => {
-                        window.location.href = 'result.html';
-                    }, 1500);
-                    
+                     window.location.href = 'result.html';
             } catch (error) {
                     console.error('❌ 压缩失败:', error);
                     

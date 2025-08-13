@@ -45,36 +45,23 @@ class ResultPage {
     displayResult() {
         if (!this.compressResult) return;
         
-        const fileNameInput = document.getElementById('fileName');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
         const fileSizeElement = document.getElementById('fileSize');
-        const originalSizeElement = document.getElementById('originalSize');
-        const compressionRatioDiv = document.getElementById('compressionRatio');
-        const ratioValueElement = document.getElementById('ratioValue');
+        const fileCountElement = document.getElementById('fileCount');
         
-        // 设置文件名
-        if (fileNameInput) {
-            fileNameInput.value = this.compressResult.fileName || 'compressed_files';
+        // 设置文件名显示
+        if (fileNameDisplay) {
+            fileNameDisplay.textContent = this.compressResult.fileName || 'compressed_files';
         }
         
         // 设置文件大小信息
         if (fileSizeElement) {
-            fileSizeElement.textContent = `压缩后大小: ${this.formatFileSize(this.compressResult.compressedSize)}`;
+            fileSizeElement.textContent = this.formatFileSize(this.compressResult.compressedSize);
         }
         
-        if (originalSizeElement) {
-            originalSizeElement.textContent = `原始大小: ${this.formatFileSize(this.compressResult.originalSize)}`;
-        }
-        
-        // 计算并显示压缩率
-        if (this.compressResult.originalSize > 0) {
-            const compressionRatio = ((this.compressResult.originalSize - this.compressResult.compressedSize) / this.compressResult.originalSize * 100);
-            
-            if (compressionRatio > 0) {
-                if (compressionRatioDiv) compressionRatioDiv.style.display = 'flex';
-                if (ratioValueElement) {
-                    ratioValueElement.textContent = `节省 ${compressionRatio.toFixed(1)}%`;
-                }
-            }
+        // 设置文件数量
+        if (fileCountElement) {
+            fileCountElement.textContent = `${this.compressResult.fileCount || 0} 个`;
         }
         
         // 添加动画效果
@@ -106,8 +93,12 @@ class ResultPage {
     
     bindEvents() {
         const downloadBtn = document.getElementById('downloadBtn');
-        const fileNameInput = document.getElementById('fileName');
         const editNameBtn = document.getElementById('editNameBtn');
+        const renameModal = document.getElementById('renameModal');
+        const closeRenameModal = document.getElementById('closeRenameModal');
+        const cancelRename = document.getElementById('cancelRename');
+        const confirmRename = document.getElementById('confirmRename');
+        const fileNameInput = document.getElementById('fileNameInput');
         
         // 下载按钮
         if (downloadBtn) {
@@ -119,47 +110,103 @@ class ResultPage {
             });
         }
         
-        // 文件名编辑
-        if (fileNameInput) {
-            fileNameInput.addEventListener('change', () => {
-                this.updateFileName();
-            });
-            
-            fileNameInput.addEventListener('focus', () => {
-                fileNameInput.select();
+        // 编辑文件名按钮
+        if (editNameBtn) {
+            editNameBtn.addEventListener('click', () => {
+                this.showRenameModal();
             });
         }
         
-        if (editNameBtn) {
-            editNameBtn.addEventListener('click', () => {
-                if (fileNameInput) {
-                    fileNameInput.focus();
-                    fileNameInput.select();
+        // 重命名弹框事件
+        if (closeRenameModal) {
+            closeRenameModal.addEventListener('click', () => {
+                this.hideRenameModal();
+            });
+        }
+        
+        if (cancelRename) {
+            cancelRename.addEventListener('click', () => {
+                this.hideRenameModal();
+            });
+        }
+        
+        if (confirmRename) {
+            confirmRename.addEventListener('click', () => {
+                this.updateFileName();
+            });
+        }
+        
+        if (fileNameInput) {
+            fileNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.updateFileName();
+                }
+            });
+        }
+        
+        // 点击背景关闭弹框
+        if (renameModal) {
+            renameModal.addEventListener('click', (e) => {
+                if (e.target === renameModal) {
+                    this.hideRenameModal();
                 }
             });
         }
     }
     
+    showRenameModal() {
+        const renameModal = document.getElementById('renameModal');
+        const fileNameInput = document.getElementById('fileNameInput');
+        
+        if (renameModal && fileNameInput) {
+            // 设置当前文件名
+            fileNameInput.value = this.compressResult?.fileName || 'compressed_files';
+            renameModal.style.display = 'flex';
+            
+            // 聚焦并选中文本
+            setTimeout(() => {
+                fileNameInput.focus();
+                fileNameInput.select();
+            }, 100);
+        }
+    }
+    
+    hideRenameModal() {
+        const renameModal = document.getElementById('renameModal');
+        if (renameModal) {
+            renameModal.style.display = 'none';
+        }
+    }
+    
     updateFileName() {
-        const fileNameInput = document.getElementById('fileName');
+        const fileNameInput = document.getElementById('fileNameInput');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        
         if (!fileNameInput || !this.compressResult) return;
         
         const newName = fileNameInput.value.trim();
         
         if (newName === '') {
             this.showToast('⚠️ 文件名不能为空');
-            fileNameInput.value = this.compressResult.fileName;
             return;
         }
         
         // 更新文件名
         this.compressResult.fileName = newName;
         
+        // 更新显示
+        if (fileNameDisplay) {
+            fileNameDisplay.textContent = newName;
+        }
+        
         // 更新sessionStorage
         sessionStorage.setItem('compressResult', JSON.stringify(this.compressResult));
         
         // 文件重命名打点
         window.analytics.fileAction('rename_download', newName, this.compressResult.compressedSize);
+        
+        // 隐藏弹框
+        this.hideRenameModal();
         
         this.showToast('✏️ 文件名已更新');
     }
@@ -172,17 +219,22 @@ class ResultPage {
         }
         
         // 检查下载权限
-        const permission = window.paymentSystem.checkDownloadPermission(this.compressResult.compressedSize);
-        
-        if (permission.allowed) {
-            // 直接下载
-            this.startDownload(permission.type);
+        if (window.paymentSystem) {
+            const permission = window.paymentSystem.checkDownloadPermission(this.compressResult.compressedSize);
+            
+            if (permission.allowed) {
+                // 直接下载
+                this.startDownload(permission.type);
+            } else {
+                // 显示付费弹框
+                window.paymentSystem.showPaymentModal(
+                    this.compressResult.compressedSize, 
+                    permission.reason
+                );
+            }
         } else {
-            // 显示付费弹框
-            window.paymentSystem.showPaymentModal(
-                this.compressResult.compressedSize, 
-                permission.reason
-            );
+            // 默认直接下载
+            this.startDownload('free');
         }
     }
     

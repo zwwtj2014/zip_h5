@@ -9,48 +9,162 @@
     <script src="https://zww.xiexinbao.com/js/custom-toast.js"></script>
     <script src="https://zww.xiexinbao.com/js/util.js"></script>
     <script src="js/zww_uploader.js"></script>
+    
+    <style>
+        /* 统一页面风格 */
+        body {
+            background: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding-bottom: 100px; /* 为固定按钮留出空间 */
+        }
+        
+        /* 统一容器样式 */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px min(20px, 3vw) 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        
+        /* 结果卡片样式 */
+        .result-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 文件名显示样式 */
+        .file-name-display {
+            font-size: clamp(16px, 4vw, 18px);
+            color: #333;
+            font-weight: 600;
+        }
+        
+        /* 弹框样式 */
+        .modal-body {
+            padding: 20px 0;
+        }
+        
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px 0 0 8px;
+            font-size: 16px;
+            outline: none;
+        }
+        
+        .input-group input:focus {
+            border-color: #3B82F6;
+        }
+        
+        .input-suffix {
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        /* 压缩完成标题样式 */
+        .compress-title {
+            font-size: clamp(20px, 5vw, 24px);
+            color: #333;
+            margin: 0 0 16px 0;
+            font-weight: 700;
+            text-align: center;
+        }
+        
+        /* 固定底部下载按钮 */
+        .fixed-download-btn {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 16px 20px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        
+        .download-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 16px 24px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            min-height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .download-btn:active {
+            transform: translateY(0);
+        }
+        
+        .download-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div class="success-animation">
-                <div class="checkmark">✓</div>
-            </div>
-            <h1>压缩完成</h1>
-        </div>
+
         
         <div class="result-card">
             <div class="file-preview">
                 <div class="file-icon-large">📦</div>
                 <div class="file-details">
                     <div class="file-name-container">
-                        <input type="text" id="fileName" class="file-name-input" placeholder="压缩包名称">
+                        <span class="file-name-display" id="fileNameDisplay">compressed_files</span>
                         <span class="file-extension">.zip</span>
-                        <button class="edit-name-btn" id="editNameBtn" title="编辑文件名">✏️</button>
+                        <button class="edit-name-btn" id="editNameBtn" title="重命名">✏️</button>
                     </div>
                     <div class="file-stats">
+                        <h2 class="compress-title">压缩完成</h2>
                         <div class="stat-row">
-                            <span class="stat-label">压缩后大小:</span>
                             <span class="stat-value compressed-size" id="fileSize">0 MB</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">原始大小:</span>
-                            <span class="stat-value original-size" id="originalSize">0 MB</span>
-                        </div>
-                        <div class="stat-row compression-ratio" id="compressionRatio" style="display: none;">
-                            <span class="stat-label">压缩率:</span>
-                            <span class="stat-value ratio-value" id="ratioValue">0%</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <div class="download-section">
-            <button class="btn btn-primary btn-large" id="downloadBtn">
-                立即下载
-            </button>
-        </div>
+
         
         <!-- 付费下载弹框 -->
         <div class="modal" id="paymentModal" style="display: none;">
@@ -124,15 +238,42 @@
             </div>
         </div>
         
-        <div class="actions-footer">
-            <button class="btn btn-secondary" onclick="window.location.href='index.html'">
-                压缩新文件
-            </button>
+
+    </div>
+    
+    <!-- 重命名弹框 -->
+    <div class="modal" id="renameModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>重命名文件</h3>
+                <button class="close-btn" id="closeRenameModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>请输入新的文件名：</p>
+                <div class="input-group">
+                    <input type="text" id="fileNameInput" class="file-name-input" placeholder="文件名">
+                    <span class="input-suffix">.zip</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelRename">取消</button>
+                <button class="btn btn-primary" id="confirmRename">确认</button>
+            </div>
         </div>
+    </div>
+    
+
+    
+    <!-- 固定底部下载按钮 -->
+    <div class="fixed-download-btn">
+        <button class="download-btn" id="downloadBtn">
+            下载文件
+        </button>
     </div>
     
     <script src="js/analytics.js"></script>
     <script src="js/payment.js"></script>
     <script src="js/result.js"></script>
+
 </body>
 </html>
