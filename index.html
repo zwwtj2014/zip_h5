@@ -512,6 +512,15 @@
         </div>
     </div>
     
+    <!-- 订单列表区域 -->
+    <div class="order-list-section" id="orderListSection" style="display: none;">
+        <div class="container">
+            <div class="order-list" id="orderList">
+                <!-- 订单项将在此动态生成 -->
+            </div>
+        </div>
+    </div>
+    
     <!-- 客服区域 -->
     <div class="customer-service">
         <p>遇到问题：<a onclick="callWxkefu()" style="text-decoration:none;color:#3B82F6;cursor:pointer;">点此联系客服</a></p>
@@ -560,6 +569,13 @@
                         entry_time: new Date().toISOString()
                     });
                 }
+                
+                // 延迟加载历史订单
+                setTimeout(() => {
+                    if (typeof getMyOrders === 'function') {
+                        getMyOrders();
+                    }
+                }, 500);
             }
             
             bindEvents() {
@@ -1156,6 +1172,124 @@
         
         function getUserId() {
             return localStorage.getItem('user_id') || '';
+        }
+        
+        // 获取协议
+        function getProtocol() {
+            return window.location.protocol.indexOf('https') > -1 ? 'https:' : 'http:';
+        }
+        
+        // HTTP POST 请求函数
+        function http_post(options) {
+            const { url, data, callback } = options;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(data),
+                mode: 'cors'
+            })
+            .then(response => response.text())
+            .then(callback)
+            .catch(error => {
+                console.error('HTTP请求失败:', error);
+                if (callback) callback('{"list":[]}'); // 返回空列表作为fallback
+            });
+        }
+        
+        // 数字转62进制
+        function to62(num) {
+            const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let result = '';
+            if (num === 0) return '0';
+            while (num > 0) {
+                result = chars[num % 62] + result;
+                num = Math.floor(num / 62);
+            }
+            return result;
+        }
+        
+        // 获取我的订单列表
+        function getMyOrders() {
+            const orderListSection = document.getElementById('orderListSection');
+            const orderList = document.getElementById('orderList');
+            
+            http_post({
+                url: getProtocol() + '//p.xiexinbao.com/zww_order/mylist',
+                data: {
+                    user_id: getUserId() || window.fp_id || '',
+                    openid: '',
+                    limit: 50
+                },
+                callback: function(html) {
+                    try {
+                        const result = JSON.parse(html);
+                        let tpls = result.list || [];
+
+                        // 过滤出 data_out_temp 以 'http' 开头的订单
+                        tpls = tpls.filter(function(item) {
+                            return item.data_out_temp && item.data_out_temp.startsWith('http');
+                        });
+
+                        // 按创建时间倒序排序
+                        tpls.sort(function(a, b) {
+                            return parseInt(b.ctime) - parseInt(a.ctime);
+                        });
+
+                        if (tpls.length > 0) {
+                            // 显示订单列表区域
+                            orderListSection.style.display = 'block';
+                            
+                            let orderListHtml = '<div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px 0;"><h3 style="font-size: 18px; color: #333; margin: 0;">历史记录</h3><span style="font-size: 12px; color: #888;">仅保留24小时, 请提前下载备份</span></div>';
+                            orderListHtml += '<div class="order-items">';
+                            
+                            tpls.forEach(function(item) {
+                                // 从订单数据中获取压缩包信息
+                                let fileName = '压缩包.zip';
+                                let fileCount = 0;
+                                
+                                try {
+                                    const dataIn = JSON.parse(item.data_in || '{}');
+                                    if (dataIn.file_count) {
+                                        fileCount = dataIn.file_count;
+                                        fileName = `压缩包(${fileCount}个文件).zip`;
+                                    }
+                                } catch (e) {
+                                    console.error('解析订单数据失败:', e);
+                                }
+                                
+                                const payCallback = `result.html?order_id=${item.id}`;
+                                
+                                orderListHtml += '<div class="order-item" style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; background: #fff; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+                                orderListHtml += '<div class="item-icon" style="width: 40px; height: 40px; margin-right: 15px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #3B82F6; color: white; font-weight: bold; font-size: 12px;">';
+                                orderListHtml += 'ZIP';
+                                orderListHtml += '</div>';
+                                orderListHtml += '<div class="file-info" style="flex: 1; overflow: hidden;">';
+                                orderListHtml += '<div class="file-name" style="font-size: 14px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + fileName + '</div>';
+                                if (fileCount > 0) {
+                                    orderListHtml += '<div class="file-count" style="font-size: 12px; color: #666; margin-top: 2px;">包含 ' + fileCount + ' 个文件</div>';
+                                }
+                                orderListHtml += '</div>';
+                                orderListHtml += '<a href="' + payCallback + '" class="download-btn" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block;">下载</a>';
+                                orderListHtml += '</div>';
+                            });
+                            
+                            orderListHtml += '</div>';
+                            orderList.innerHTML = orderListHtml;
+                            
+                            console.log(`📋 加载了 ${tpls.length} 个历史订单`);
+                        } else {
+                            // 没有订单时隐藏区域
+                            orderListSection.style.display = 'none';
+                        }
+                    } catch (error) {
+                        console.error('解析订单列表失败:', error);
+                        orderListSection.style.display = 'none';
+                    }
+                }
+            });
         }
         
         console.log('🚀 文件压缩工具已加载完成');
