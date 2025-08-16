@@ -10,10 +10,8 @@ class ResultPage {
         this.loadCompressResult();
         this.bindEvents();
         
-        // 页面访问打点
-        window.analytics.pageView('result', {
-            entry_time: new Date().toISOString()
-        });
+        // 页面访问统计
+        window.analytics.pageView('result');
         
         console.log('📊 ResultPage initialized');
     }
@@ -49,9 +47,13 @@ class ResultPage {
         const fileSizeElement = document.getElementById('fileSize');
         const fileCountElement = document.getElementById('fileCount');
         
-        // 设置文件名显示
+        // 设置文件名显示 - 只显示随机数部分
         if (fileNameDisplay) {
-            fileNameDisplay.textContent = this.compressResult.fileName || 'compressed_files';
+            const originalFileName = this.compressResult.fileName || 'compressed_files';
+            // 提取随机数部分（数字）
+            const match = originalFileName.match(/\d{13}$/);
+            const displayName = match ? match[0] : originalFileName;
+            fileNameDisplay.textContent = displayName;
         }
         
         // 设置文件大小信息
@@ -103,9 +105,7 @@ class ResultPage {
         // 下载按钮
         if (downloadBtn) {
             downloadBtn.addEventListener('click', () => {
-                window.analytics.buttonClick('download_button', {
-                    file_size: this.compressResult?.compressedSize || 0
-                });
+                window.analytics.buttonClick('download_button');
                 this.handleDownload();
             });
         }
@@ -159,8 +159,11 @@ class ResultPage {
         const fileNameInput = document.getElementById('fileNameInput');
         
         if (renameModal && fileNameInput) {
-            // 设置当前文件名
-            fileNameInput.value = this.compressResult?.fileName || 'compressed_files';
+            // 设置当前文件名 - 只显示随机数部分
+            const originalFileName = this.compressResult?.fileName || 'compressed_files';
+            const match = originalFileName.match(/\d{13}$/);
+            const displayName = match ? match[0] : originalFileName;
+            fileNameInput.value = displayName;
             renameModal.style.display = 'flex';
             
             // 聚焦并选中文本
@@ -202,8 +205,8 @@ class ResultPage {
         // 更新sessionStorage
         sessionStorage.setItem('compressResult', JSON.stringify(this.compressResult));
         
-        // 文件重命名打点
-        window.analytics.fileAction('rename_download', newName, this.compressResult.compressedSize);
+        // 文件重命名统计
+        window.analytics.fileAction('rename_download', newName);
         
         // 隐藏弹框
         this.hideRenameModal();
@@ -248,8 +251,8 @@ class ResultPage {
             return;
         }
         
-        // 下载开始打点
-        window.analytics.downloadStart(downloadType, this.compressResult.compressedSize, this.compressResult.fileName);
+        // 下载开始统计
+        window.analytics.downloadStart(downloadType, this.compressResult.compressedSize);
         
         try {
             // 创建下载链接
@@ -268,7 +271,7 @@ class ResultPage {
                 URL.revokeObjectURL(url);
             }, 1000);
             
-            // 下载完成打点
+            // 下载完成统计
             window.analytics.downloadComplete(downloadType, this.compressResult.compressedSize);
             
             // 成功提示

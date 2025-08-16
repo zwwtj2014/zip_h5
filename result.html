@@ -11,21 +11,19 @@
     <script src="js/zww_uploader.js"></script>
     
     <style>
-        /* 统一页面风格 */
+        /* 页面基础样式 */
         body {
-            background: #f8f9fa;
+            background: #f5f5f5;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            padding-bottom: 100px; /* 为固定按钮留出空间 */
+            padding-bottom: 100px;
+            margin: 0;
+            padding-top: 20px;
         }
         
-        /* 统一容器样式 */
         .container {
-            max-width: 800px;
+            max-width: 480px;
             margin: 0 auto;
-            padding: 40px min(20px, 3vw) 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
+            padding: 0 20px;
         }
         
         /* 结果卡片样式 */
@@ -34,14 +32,100 @@
             border-radius: 16px;
             padding: 24px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e1e5e9;
         }
         
-        /* 文件名显示样式 */
-        .file-name-display {
-            font-size: clamp(16px, 4vw, 18px);
-            color: #333;
+        .file-preview {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .file-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .file-details {
+            text-align: center;
+        }
+        
+        /* 文件名行 */
+        .file-name-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .file-name-container {
+            display: inline-flex;
+            align-items: center;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 10px 16px;
+            transition: all 0.3s ease;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        
+        .file-name-container:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+                 .filename{
+             font-size: 16px;
+             font-weight: 600;
+             color: #2d3748;
+             word-break: break-all;
+             flex: 1;
+             min-width: 0;
+         }
+        
+                 .file-extension {
+             font-size: 16px;
+             font-weight: 600;
+             color: #2d3748;
+             white-space: nowrap;
+             flex-shrink: 0;
+         }
+        
+        .edit-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .edit-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        /* 状态行 */
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .status-text {
+            font-size: 18px;
             font-weight: 600;
+            color: #333;
+        }
+        
+        .file-size {
+            font-size: 18px;
+            font-weight: 600;
+            color: #4CAF50;
         }
         
         /* 弹框样式 */
@@ -85,15 +169,6 @@
             margin-top: 20px;
         }
         
-        /* 压缩完成标题样式 */
-        .compress-title {
-            font-size: clamp(20px, 5vw, 24px);
-            color: #333;
-            margin: 0 0 16px 0;
-            font-weight: 700;
-            text-align: center;
-        }
-        
         /* 固定底部下载按钮 */
         .fixed-download-btn {
             position: fixed;
@@ -111,7 +186,7 @@
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
             border: none;
-            border-radius: 25px;
+            border-radius: 12px;
             padding: 16px 24px;
             font-size: 18px;
             font-weight: 600;
@@ -147,19 +222,20 @@
         
         <div class="result-card">
             <div class="file-preview">
-                <div class="file-icon-large">📦</div>
-                <div class="file-details">
+                <div class="file-icon">📦</div>
+            </div>
+            
+            <div class="file-details">
+                <div class="file-name-row">
                     <div class="file-name-container">
-                        <span class="file-name-display" id="fileNameDisplay">compressed_files</span>
-                        <span class="file-extension">.zip</span>
-                        <button class="edit-name-btn" id="editNameBtn" title="重命名">✏️</button>
+                        <span class="filename" id="fileNameDisplay">compressed_files</span><span class="file-extension">.zip</span>
                     </div>
-                    <div class="file-stats">
-                        <h2 class="compress-title">压缩完成</h2>
-                        <div class="stat-row">
-                            <span class="stat-value compressed-size" id="fileSize">0 MB</span>
-                        </div>
-                    </div>
+                    <button class="edit-btn" id="editNameBtn" title="重命名">✏️</button>
+                </div>
+                
+                <div class="status-row">
+                    <span class="status-text">压缩完成</span>
+                    <span class="file-size" id="fileSize">0 MB</span>
                 </div>
             </div>
         </div>

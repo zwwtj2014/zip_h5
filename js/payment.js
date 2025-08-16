@@ -89,8 +89,8 @@ class PaymentSystem {
         // 绑定事件
         this.bindPaymentEvents();
         
-        // 付费弹框显示打点
-        window.analytics.paymentShow(reason, fileSize);
+        // 付费弹框显示统计
+        window.analytics.paymentShow(reason);
         window.analytics.modalOpen('payment_modal');
         
         console.log('💳 Payment modal shown for', fileSize, 'bytes');
@@ -211,8 +211,8 @@ class PaymentSystem {
             this.phoneNumber = phone;
             localStorage.setItem('user_phone', phone);
             
-            // 绑定成功打点
-            window.analytics.phoneBinding(true, phone);
+            // 绑定成功统计
+            window.analytics.phoneBinding(true);
             
             this.showToast('✅ 手机号绑定成功！');
             this.hidePaymentModal();
@@ -243,7 +243,7 @@ class PaymentSystem {
         const price = prices[this.currentPlan];
         
         try {
-            // VIP购买打点
+            // VIP购买统计
             window.analytics.vipPurchase(this.currentPlan, price);
             
             // 模拟支付流程（实际应用中需要对接支付接口）
@@ -324,8 +324,8 @@ class PaymentSystem {
             return;
         }
         
-        // 下载开始打点
-        window.analytics.downloadStart(downloadType, compressResult.compressedSize, compressResult.fileName);
+        // 下载开始统计
+        window.analytics.downloadStart(downloadType, compressResult.compressedSize);
         
         // 创建下载链接
         const url = URL.createObjectURL(compressedBlob);
@@ -343,7 +343,7 @@ class PaymentSystem {
             URL.revokeObjectURL(url);
         }, 1000);
         
-        // 下载完成打点
+        // 下载完成统计
         window.analytics.downloadComplete(downloadType, compressResult.compressedSize);
         
         this.showToast('⬇️ 下载已开始！');

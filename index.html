@@ -506,7 +506,7 @@
             <!-- 压缩区域 -->
             <div class="compress-section" id="compressSection">
                 <button class="btn btn-success btn-large" id="compressBtn">
-                    <span>🗜️</span> 开始压缩
+                     开始压缩
                 </button>
             </div>
         </div>
@@ -563,11 +563,9 @@
                 this.setupDragAndDrop();
                 console.log('🚀 文件压缩应用已初始化');
                 
-                // 页面访问打点
+                // 页面访问统计
                 if (window.analytics) {
-                    window.analytics.pageView('index', {
-                        entry_time: new Date().toISOString()
-                    });
+                    window.analytics.pageView('index');
                 }
                 
                 // 延迟加载历史订单
@@ -620,10 +618,7 @@
                 
                 compressBtn.addEventListener('click', () => {
                     if (window.analytics) {
-                        window.analytics.buttonClick('start_compress', {
-                            file_count: this.selectedFiles.length,
-                            total_size: this.getTotalSize()
-                        });
+                        window.analytics.buttonClick('start_compress');
                     }
                     this.startCompress();
                 });
@@ -678,12 +673,11 @@
                     }
                 }
                     
-                    // 文件选择打点
+                    // 文件选择统计
                     if (window.analytics) {
-                    const totalSize = this.getTotalSize();
-                    const fileTypes = this.getFileTypes(this.selectedFiles);
-                    window.analytics.fileSelect(this.selectedFiles.length, totalSize, fileTypes);
-                }
+                        const totalSize = this.getTotalSize();
+                        window.analytics.fileSelect(this.selectedFiles.length, totalSize);
+                    }
                 
                 this.updateDisplay();
                 this.showToast(`✅ 已选择 ${this.selectedFiles.length} 个文件`);
@@ -755,9 +749,9 @@
                 const file = this.selectedFiles[index];
                 console.log(`🗑️ 删除文件: ${file.name}`);
                 
-                // 文件删除打点
+                // 文件删除统计
                 if (window.analytics) {
-                    window.analytics.fileAction('remove', file.name, file.size);
+                    window.analytics.fileAction('remove', file.name);
                 }
                 
                 this.selectedFiles.splice(index, 1);
@@ -795,9 +789,9 @@
                     
                     console.log(`✏️ 文件重命名: ${currentName} → ${finalName}`);
                     
-                    // 文件重命名打点
+                    // 文件重命名统计
                     if (window.analytics) {
-                        window.analytics.fileAction('rename', finalName, file.size);
+                        window.analytics.fileAction('rename', finalName);
                     }
                     
                     this.updateDisplay();
@@ -812,9 +806,9 @@
                     const count = this.selectedFiles.length;
                     console.log(`🧹 清空所有文件: ${count} 个`);
                     
-                    // 清空打点
+                    // 清空统计
                     if (window.analytics) {
-                        window.analytics.fileAction('clear_all', '', count);
+                        window.analytics.fileAction('clear_all');
                     }
                     
                     this.selectedFiles = [];
@@ -842,12 +836,9 @@
                 const modal = document.getElementById('compressModal');
                 modal.style.display = 'flex';
                 
-                // 压缩开始打点
+                // 压缩开始统计
                 if (window.analytics) {
-                    window.analytics.track('compress_start', {
-                        file_count: this.selectedFiles.length,
-                        total_size: this.getTotalSize()
-                    });
+                    window.analytics.compressStart(this.selectedFiles.length, this.getTotalSize());
                 }
                 
                 const startTime = Date.now();
@@ -924,15 +915,9 @@
                         // 不影响压缩流程
                     }
                     
-                    // 压缩成功打点
-                if (window.analytics) {
-                        window.analytics.track('compress_success', {
-                            file_count: this.selectedFiles.length,
-                            original_size: compressResult.originalSize,
-                            compressed_size: compressResult.compressedSize,
-                            compression_ratio: ((compressResult.originalSize - compressResult.compressedSize) / compressResult.originalSize * 100).toFixed(2),
-                            duration: duration
-                        });
+                    // 压缩成功统计
+                    if (window.analytics) {
+                        window.analytics.compressComplete(compressResult.originalSize, compressResult.compressedSize, this.selectedFiles.length);
                     }
                     
                     // 隐藏弹框
@@ -943,9 +928,9 @@
             } catch (error) {
                     console.error('❌ 压缩失败:', error);
                     
-                    // 压缩失败打点
-                if (window.analytics) {
-                        window.analytics.error('compress_error', error.message);
+                    // 压缩失败统计
+                    if (window.analytics) {
+                        window.analytics.compressError(error);
                     }
                     
                     // 隐藏弹框
@@ -983,14 +968,9 @@
                         sessionStorage.setItem('orderId', orderId);
                         console.log('📝 订单创建成功:', orderId);
                         
-                        // 订单创建成功打点
-                if (window.analytics) {
-                            window.analytics.track('order_created', {
-                                order_id: orderId,
-                                file_count: compressResult.fileCount,
-                                original_size: compressResult.originalSize,
-                                compressed_size: compressResult.compressedSize
-                            });
+                        // 订单创建成功统计
+                        if (window.analytics) {
+                            window.analytics.track('order_created');
                         }
                     } else {
                         console.log('⚠️ 订单创建失败:', response.status);

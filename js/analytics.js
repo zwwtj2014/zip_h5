@@ -1,298 +1,162 @@
-// 运维打点上报功能
-class Analytics {
+// 简化的统计脚本
+class SimpleAnalytics {
     constructor() {
-        this.baseUrl = 'https://log.xiexinbao.com/user/log.gif';
         this.sessionId = this.generateSessionId();
-        this.userId = this.getUserId();
-        this.deviceInfo = this.getDeviceInfo();
+        this.startTime = Date.now();
         
-        // 初始化打点
-        this.track('system_init', {
-            timestamp: Date.now(),
-            page_load_time: performance.now()
-        });
+        console.log('📊 Simple Analytics initialized');
     }
     
     generateSessionId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
     }
     
-    getUserId() {
-        let userId = localStorage.getItem('user_id');
-        if (!userId) {
-            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-            localStorage.setItem('user_id', userId);
-        }
-        return userId;
-    }
-    
-    getDeviceInfo() {
-        return {
-            user_agent: navigator.userAgent,
-            screen_width: screen.width,
-            screen_height: screen.height,
-            viewport_width: window.innerWidth,
-            viewport_height: window.innerHeight,
-            device_type: this.getDeviceType(),
-            browser: this.getBrowserInfo(),
-            platform: navigator.platform,
-            language: navigator.language
-        };
-    }
-    
-    getDeviceType() {
-        const userAgent = navigator.userAgent.toLowerCase();
-        if (/mobile|android|iphone|ipad|phone/i.test(userAgent)) {
-            return 'mobile';
-        }
-        if (/tablet|ipad/i.test(userAgent)) {
-            return 'tablet';
-        }
-        return 'desktop';
-    }
-    
-    getBrowserInfo() {
-        const userAgent = navigator.userAgent;
-        if (userAgent.indexOf('Chrome') > -1) return 'Chrome';
-        if (userAgent.indexOf('Firefox') > -1) return 'Firefox';
-        if (userAgent.indexOf('Safari') > -1) return 'Safari';
-        if (userAgent.indexOf('Edge') > -1) return 'Edge';
-        return 'Unknown';
-    }
-    
-    // 核心打点方法
-    track(event, data = {}) {
-        const params = {
+    // 基本统计方法 - 只在控制台输出，不发送到服务器
+    log(event, data = {}) {
+        const logData = {
             event: event,
             session_id: this.sessionId,
-            user_id: this.userId,
             timestamp: Date.now(),
-            url: window.location.href,
             page: window.location.pathname,
-            referrer: document.referrer || '',
-            ...this.deviceInfo,
             ...data
         };
         
-        // 构建查询参数
-        const queryString = Object.keys(params)
-            .map(key => {
-                const value = typeof params[key] === 'object' ? JSON.stringify(params[key]) : params[key];
-                return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
-            })
-            .join('&');
-        
-        // 使用 Image 对象发送请求（避免跨域问题）
-        const img = new Image();
-        img.src = `${this.baseUrl}?${queryString}`;
-        
-        // 开发环境下输出日志
+        // 只在开发环境输出
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.log('📊 Analytics:', event, params);
-        }
-        
-        // 备用方案：使用 navigator.sendBeacon（如果支持）
-        if (navigator.sendBeacon && event.includes('page_leave')) {
-            const formData = new FormData();
-            Object.keys(params).forEach(key => {
-                formData.append(key, typeof params[key] === 'object' ? JSON.stringify(params[key]) : params[key]);
-            });
-            navigator.sendBeacon(this.baseUrl, formData);
+            console.log('📊 Stats:', event, logData);
         }
     }
     
-    // 页面访问打点
+    // 页面访问统计
     pageView(pageName, extraData = {}) {
-        this.track('page_view', {
+        this.log('page_view', {
             page_name: pageName,
-            load_time: performance.now(),
             ...extraData
         });
     }
     
-    // 页面离开打点
+    // 页面离开统计
     pageLeave(pageName, duration) {
-        this.track('page_leave', {
+        this.log('page_leave', {
             page_name: pageName,
-            duration: duration,
-            scroll_depth: this.getScrollDepth()
+            duration: Math.round(duration / 1000) // 转换为秒
         });
     }
     
-    getScrollDepth() {
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-        return docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
+    // 简单的按钮点击统计
+    buttonClick(buttonName) {
+        this.log('button_click', {
+            button_name: buttonName
+        });
     }
     
-    // 文件操作相关打点
-    fileSelect(fileCount, totalSize, fileTypes = []) {
-        this.track('file_select', {
+    // 文件操作统计
+    fileSelect(fileCount, totalSize) {
+        this.log('file_select', {
             file_count: fileCount,
-            total_size: totalSize,
-            total_size_mb: (totalSize / (1024 * 1024)).toFixed(2),
-            file_types: fileTypes,
-            avg_file_size: fileCount > 0 ? Math.round(totalSize / fileCount) : 0
+            total_size_mb: Math.round(totalSize / (1024 * 1024) * 100) / 100
         });
     }
     
-    fileAction(action, fileName, fileSize = 0, extraData = {}) {
-        this.track('file_action', {
+    fileAction(action, fileName = '') {
+        this.log('file_action', {
             action: action,
-            file_name: fileName ? fileName.split('.').pop() : '', // 只记录扩展名
-            file_size: fileSize,
-            file_size_mb: (fileSize / (1024 * 1024)).toFixed(2),
-            ...extraData
+            file_type: fileName ? fileName.split('.').pop() : ''
         });
     }
     
     fileDragDrop(fileCount, totalSize) {
-        this.track('file_drag_drop', {
+        this.log('file_drag_drop', {
             file_count: fileCount,
-            total_size: totalSize,
-            total_size_mb: (totalSize / (1024 * 1024)).toFixed(2)
+            total_size_mb: Math.round(totalSize / (1024 * 1024) * 100) / 100
         });
     }
     
-    // 压缩相关打点
-    compressStart(fileCount, totalSize, fileTypes = []) {
+    // 压缩统计
+    compressStart(fileCount, totalSize) {
         this.compressStartTime = Date.now();
-        this.track('compress_start', {
+        this.log('compress_start', {
             file_count: fileCount,
-            total_size: totalSize,
-            total_size_mb: (totalSize / (1024 * 1024)).toFixed(2),
-            file_types: fileTypes,
-            avg_file_size: fileCount > 0 ? Math.round(totalSize / fileCount) : 0
+            total_size_mb: Math.round(totalSize / (1024 * 1024) * 100) / 100
         });
     }
     
     compressComplete(originalSize, compressedSize, fileCount) {
         const duration = Date.now() - (this.compressStartTime || Date.now());
-        const compressionRatio = originalSize > 0 ? ((originalSize - compressedSize) / originalSize * 100) : 0;
-        
-        this.track('compress_complete', {
-            original_size: originalSize,
-            compressed_size: compressedSize,
-            original_size_mb: (originalSize / (1024 * 1024)).toFixed(2),
-            compressed_size_mb: (compressedSize / (1024 * 1024)).toFixed(2),
-            compression_ratio: compressionRatio.toFixed(2),
-            duration: duration,
-            duration_seconds: (duration / 1000).toFixed(2),
+        this.log('compress_complete', {
             file_count: fileCount,
-            compression_speed: originalSize > 0 ? (originalSize / duration * 1000).toFixed(0) : 0 // bytes per second
+            duration_seconds: Math.round(duration / 1000),
+            compression_ratio: originalSize > 0 ? Math.round(((originalSize - compressedSize) / originalSize * 100)) : 0
         });
     }
     
-    compressError(error, fileCount, totalSize) {
-        this.track('compress_error', {
-            error_message: error.message || error,
-            error_type: error.name || 'UnknownError',
-            file_count: fileCount,
-            total_size: totalSize,
-            total_size_mb: (totalSize / (1024 * 1024)).toFixed(2)
+    compressError(error) {
+        this.log('compress_error', {
+            error_type: error.name || 'Error'
         });
     }
     
-    // 下载相关打点
-    downloadStart(downloadType, fileSize, fileName = '') {
+    // 下载统计
+    downloadStart(downloadType, fileSize) {
         this.downloadStartTime = Date.now();
-        this.track('download_start', {
+        this.log('download_start', {
             download_type: downloadType,
-            file_size: fileSize,
-            file_size_mb: (fileSize / (1024 * 1024)).toFixed(2),
-            file_name: fileName.split('.').pop() // 只记录扩展名
+            file_size_mb: Math.round(fileSize / (1024 * 1024) * 100) / 100
         });
     }
     
     downloadComplete(downloadType, fileSize) {
         const duration = Date.now() - (this.downloadStartTime || Date.now());
-        this.track('download_complete', {
+        this.log('download_complete', {
             download_type: downloadType,
-            file_size: fileSize,
-            file_size_mb: (fileSize / (1024 * 1024)).toFixed(2),
-            duration: duration,
-            duration_seconds: (duration / 1000).toFixed(2),
-            download_speed: fileSize > 0 ? (fileSize / duration * 1000).toFixed(0) : 0 // bytes per second
+            duration_seconds: Math.round(duration / 1000)
         });
     }
     
-    // 付费相关打点
-    paymentShow(reason, fileSize) {
-        this.track('payment_modal_show', {
-            reason: reason,
-            file_size: fileSize,
-            file_size_mb: (fileSize / (1024 * 1024)).toFixed(2)
-        });
+    // 付费相关统计（简化）
+    paymentShow(reason) {
+        this.log('payment_modal_show', { reason: reason });
     }
     
-    paymentChoice(paymentType, fileSize) {
-        this.track('payment_choice', {
-            payment_type: paymentType,
-            file_size: fileSize,
-            file_size_mb: (fileSize / (1024 * 1024)).toFixed(2)
-        });
+    paymentChoice(paymentType) {
+        this.log('payment_choice', { payment_type: paymentType });
     }
     
-    phoneBinding(success, phone = '') {
-        this.track('phone_binding', {
-            success: success,
-            phone_provided: phone.length > 0,
-            phone_length: phone.length
-        });
+    phoneBinding(success) {
+        this.log('phone_binding', { success: success });
     }
     
     vipPurchase(plan, price) {
-        this.track('vip_purchase_attempt', {
-            plan: plan,
-            price: price
-        });
+        this.log('vip_purchase_attempt', { plan: plan, price: price });
     }
     
-    // 错误打点
-    error(errorType, errorMessage, context = {}) {
-        this.track('error', {
+    // 基本错误记录
+    error(errorType, errorMessage) {
+        this.log('error', {
             error_type: errorType,
-            error_message: errorMessage,
-            error_context: context,
-            stack_trace: new Error().stack
+            error_message: errorMessage
         });
     }
     
-    // 用户交互打点
-    buttonClick(buttonName, context = {}) {
-        this.track('button_click', {
-            button_name: buttonName,
-            button_context: context
-        });
-    }
-    
+    // 模态框统计
     modalOpen(modalName) {
-        this.track('modal_open', {
-            modal_name: modalName
-        });
+        this.log('modal_open', { modal_name: modalName });
     }
     
-    modalClose(modalName, duration) {
-        this.track('modal_close', {
-            modal_name: modalName,
-            modal_duration: duration
-        });
+    modalClose(modalName) {
+        this.log('modal_close', { modal_name: modalName });
     }
     
-    // 性能监控
-    performance(metrics) {
-        this.track('performance', {
-            ...metrics,
-            memory_used: performance.memory ? performance.memory.usedJSHeapSize : 0,
-            memory_total: performance.memory ? performance.memory.totalJSHeapSize : 0
-        });
+    // 通用事件统计
+    track(event, data = {}) {
+        this.log(event, data);
     }
 }
 
-// 全局分析实例
-window.analytics = new Analytics();
+// 全局实例
+window.analytics = new SimpleAnalytics();
 
-// 页面离开时的打点
+// 页面离开时的统计
 let pageStartTime = Date.now();
 let currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
 
@@ -301,35 +165,7 @@ window.addEventListener('beforeunload', () => {
     window.analytics.pageLeave(currentPage, duration);
 });
 
-// 页面可见性变化打点
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        window.analytics.track('page_hidden', {
-            page_name: currentPage,
-            duration_visible: Date.now() - pageStartTime
-        });
-    } else {
-        window.analytics.track('page_visible', {
-            page_name: currentPage
-        });
-        pageStartTime = Date.now();
-    }
-});
-
-// 错误监听
+// 基本错误监听
 window.addEventListener('error', (event) => {
-    window.analytics.error('javascript_error', event.message, {
-        filename: event.filename,
-        line: event.lineno,
-        column: event.colno
-    });
+    window.analytics.error('javascript_error', event.message);
 });
-
-// Promise 错误监听
-window.addEventListener('unhandledrejection', (event) => {
-    window.analytics.error('promise_rejection', event.reason, {
-        type: 'unhandled_promise_rejection'
-    });
-});
-
-console.log('📊 Analytics initialized');
