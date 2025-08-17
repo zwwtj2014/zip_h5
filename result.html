@@ -1,355 +1,1238 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" style="font-size: 44.8px;">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>压缩完成 - 下载文件</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/ux-enhancements.css">
-    <script src="https://zww.xiexinbao.com/js/custom-toast.js"></script>
-    <script src="https://zww.xiexinbao.com/js/util.js"></script>
-    <script src="js/zww_uploader.js"></script>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport"  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+	<title>...</title>
+	<meta name="description" content="">
+    <script src="https://caipiao88.oss-accelerate.aliyuncs.com/cdn/js/pop3.js?t=2222"></script>
     
     <style>
-        /* 页面基础样式 */
-        body {
-            background: #f5f5f5;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            padding-bottom: 100px;
-            margin: 0;
-            padding-top: 20px;
-        }
-        
-        .container {
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        
-        /* 结果卡片样式 */
-        .result-card {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e1e5e9;
-        }
-        
-        .file-preview {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .file-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-        
-        .file-details {
-            text-align: center;
-        }
-        
-        /* 文件名行 */
-        .file-name-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        
-        .file-name-container {
-            display: inline-flex;
-            align-items: center;
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            padding: 10px 16px;
-            transition: all 0.3s ease;
-            max-width: 100%;
-            overflow: hidden;
-        }
-        
-        .file-name-container:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-        
-                 .filename{
-             font-size: 16px;
-             font-weight: 600;
-             color: #2d3748;
-             word-break: break-all;
-             flex: 1;
-             min-width: 0;
-         }
-        
-                 .file-extension {
-             font-size: 16px;
-             font-weight: 600;
-             color: #2d3748;
-             white-space: nowrap;
-             flex-shrink: 0;
-         }
-        
-        .edit-btn {
-            background: none;
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .edit-btn:hover {
-            background: #f0f0f0;
-        }
-        
-        /* 状态行 */
-        .status-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-top: 1px solid #f0f0f0;
-        }
-        
-        .status-text {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .file-size {
-            font-size: 18px;
-            font-weight: 600;
-            color: #4CAF50;
-        }
-        
-        /* 弹框样式 */
-        .modal-body {
-            padding: 20px 0;
-        }
-        
-        .input-group {
-            display: flex;
-            align-items: center;
-            margin-top: 10px;
-        }
-        
-        .input-group input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 2px solid #ddd;
-            border-radius: 8px 0 0 8px;
-            font-size: 16px;
-            outline: none;
-        }
-        
-        .input-group input:focus {
-            border-color: #3B82F6;
-        }
-        
-        .input-suffix {
-            padding: 12px 16px;
-            background: #f8f9fa;
-            border: 2px solid #ddd;
-            border-left: none;
-            border-radius: 0 8px 8px 0;
-            color: #666;
-            font-size: 16px;
-        }
-        
-        .modal-footer {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-        
-        /* 固定底部下载按钮 */
-        .fixed-download-btn {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 16px 20px;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
-        
-        .download-btn {
-            width: 100%;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 16px 24px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            min-height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
-        
-        .download-btn:active {
-            transform: translateY(0);
-        }
-        
-        .download-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-    </style>
+		* {padding: 0;margin: 0;box-sizing: border-box;}
+		*::-webkit-scrollbar{display:none;width:0px;height:0px;}*::-webkit-scrollbar-corner {display:none;width:0px;height:0px; }*::-webkit-resizer{display:none;}
+		
+		.weui-icon-success-no-circle {
+			display:inline-block;
+			margin-bottom: 5px;
+			-webkit-mask-repeat: no-repeat;
+			mask-repeat: no-repeat;
+			-webkit-mask-size: 100%;
+			mask-size: 100%;
+			background-color: currentColor;
+			color: #07c160;
+			width: 50px;
+			height: 50px;
+			mask-image: url(data:image/svg+xml,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M8.657%2018.435L3%2012.778l1.414-1.414%204.95%204.95L20.678%205l1.414%201.414-12.02%2012.021a1%201%200%2001-1.415%200z%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E);
+			-webkit-mask-image: url(data:image/svg+xml,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M8.657%2018.435L3%2012.778l1.414-1.414%204.95%204.95L20.678%205l1.414%201.414-12.02%2012.021a1%201%200%2001-1.415%200z%22%20fill-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E);
+		}
+		.modal-overlay {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: rgba(0, 0, 0, 0.5);
+			z-index: 1000;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.modal-overlay.show {
+			display: flex;
+		}
+
+		.payment-modal-overlay {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: rgba(0, 0, 0, 0.5);
+			z-index: 1000;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.payment-modal-overlay.show {
+			display: flex;
+		}
+	</style>
+    <script>
+		/**
+		 * 设置Cookie
+		 * @param {string} name - Cookie名称
+		 * @param {string} value - Cookie值
+		 * @param {number} days - 过期天数，默认30天
+		 */
+		function setCookie(name, value, days = 30) {
+			const expires = new Date();
+			expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+			document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+		}
+		/**
+		 * 更新用户ID到各种存储中
+		 * @param {string} userId - 用户ID
+		 */
+		function updateUserId(userId) {
+			// 更新到Cookie中
+			setCookie('openid', userId);
+			setCookie('cswtj_id', userId);
+			
+			// 更新到localStorage中
+			try {
+				localStorage.setItem('openid', userId);
+				localStorage.setItem('cswtj_id', userId);
+			} catch (e) {
+				console.warn('localStorage不可用:', e);
+			}
+			
+			console.log('用户ID已更新到Cookie和localStorage:', userId);
+		}
+
+		function getProtocol(){
+			return window.location.protocol.indexOf('https')>-1?'https:':'http:';
+		}
+		String.prototype.replaceAll = function(s1,s2){ 
+			return this.replace(new RegExp(s1, "gm"), s2);
+		}
+		function extractHttpLink(text) {
+			// 正则表达式匹配http和https链接
+			const httpUrlRegex = /(\bhttps?:\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+			// 使用match方法提取所有匹配项
+			const found = text.match(httpUrlRegex);
+			return found?found[0]:text;
+		};
+		function http_get(req){var xhr=new XMLHttpRequest();xhr.ontimeout=function(e){xhr.abort()};xhr.onerror=function(e){};xhr.open("GET",req.url,true);xhr.onreadystatechange=function(){if(xhr.readyState==4){req.callback(xhr.responseText)}};xhr.timeout=10*1000;xhr.send()}
+		function http_post(req){var xhr=new XMLHttpRequest();xhr.ontimeout=function(e){xhr.abort()};xhr.onerror=function(e){};xhr.open("POST",req.url,true);xhr.onreadystatechange=function(){if(xhr.readyState==4){req.callback(xhr.responseText)}};xhr.timeout=10*1000;xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded; charset=UTF-8");var post_data=[];var postData=req.data;postData=(function(value){for(var key in value){if(typeof(value[key])=='object'){post_data.push(key+"="+encodeURIComponent(JSON.stringify(value[key])))}else{post_data.push(key+"="+encodeURIComponent(value[key]))}};return post_data.join('&')}(postData));xhr.send(postData)}
+		function getParamsFromUrl(a){try {var query = window.location.search.substring(1);var vars = query.split("&");for(var i=0;i<vars.length;i++) {var pair = vars[i].split("=");if(pair[0] == a){return pair[1];}}}catch(e){}return(false);};
+	</script>
 </head>
 <body>
-    <div class="container">
 
-        
-        <div class="result-card">
-            <div class="file-preview">
-                <div class="file-icon">📦</div>
+    <div class="content-detail">
+        <div class="content-bd">
+            <img style="pointer-events: none;user-select: none; max-height: 100%; object-fit: contain;" src="https://down.xiexinbao.com/cdn/icon/zip.png" />
+            <span class="content-name"></span>
+            <span class="content-size"></span>
+        </div>
+
+        <div class="content-ft">
+            <div class="download-btn" onclick="download_file()">下载文件</div>
+        </div>
+        <style>
+            .content-detail{
+                background:#f6f7fb;
+                display:flex;
+                flex-direction: column;
+                height:100%;
+                width:100%;
+                
+            }
+            .content-bd {
+                width: 100%;
+                flex: 1;
+                background:#f6f7fb;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                padding: 6px;
+            }
+            .content-bd  .img-info{
+                display:inline-block;
+                display:flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .content-bd .content-name {
+                margin-top: 20px;
+                margin-bottom: 5px;
+                font-size: 14px;
+            }
+            .content-bd .content-size {
+                margin-bottom: 20px;
+                font-size: 14px;
+            }
+            .content-ft{
+                width:100%;
+                background:#fff;
+                border-top-left-radius: 14px;
+                border-top-right-radius: 14px;
+                height:78px;
+                overflow:hidden;
+            }
+            .content-ft .download-btn,.download-btn{
+                width: 96%;
+                height: 1.3rem;
+                display: -ms-flexbox;
+                display: flex;
+                -ms-flex-align: center;
+                align-items: center;
+                -ms-flex-pack: center;
+                justify-content: center;
+                border-radius: 0.66666667rem;
+                font-size: 0.42666667rem;
+                background-color: #7F6AFF;
+                color: #FFFFFF;
+                font-family: PingFangSC-Medium, PingFang SC;
+                font-weight: 500;
+                text-align: center;
+                margin: 10px auto 10px ;
+                cursor:pointer;
+            }
+
+
+        </style>
+    </div>
+
+    <!-- Phone Binding Modal -->
+    <div id="phoneBindModal" class="modal-overlay">
+        <div class="payment-dialog" style="max-width: 320px;">
+            <button class="close-btn" onclick="document.getElementById('phoneBindModal').style.display = 'none';">×</button>
+            <h3 style="color: white; text-align: center; margin-bottom: 15px;font-size:18px;">绑定手机号</h3>
+            <p style="color: #ccc; font-size: 14px; margin-bottom: 15px;">绑定手机号，方便找回账户信息和获取通知。</p>
+            <input type="tel" id="phoneInput" placeholder="请输入手机号码" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #555; background-color: #333; color: white; margin-bottom: 15px;">
+            <button id="submitPhoneBind" class="pay-btn wechat-btn" style="background-color: #7F6AFF;">立即绑定</button>
+            <div id="phoneBindMsg" style="color: #ff4d4f; text-align: center; margin-top: 10px; font-size: 13px;"></div>
+        </div>
+    </div>
+    <style>
+        #phoneBindModal .payment-dialog { /* Reusing some styles */
+            padding: 25px;
+        }
+    </style>
+
+    <!-- Member Recovery Modal -->
+    <div id="memberRecoveryModal" class="modal-overlay">
+        <div class="payment-dialog" style="max-width: 320px;">
+            <button class="close-btn" onclick="document.getElementById('memberRecoveryModal').style.display = 'none';">×</button>
+            <h3 style="color: white; text-align: center; margin-bottom: 20px; font-size: 18px;">会员验证</h3>
+            
+            <!-- 手机号验证区域 -->
+            <div id="phoneVerifyArea" class="verify-area">
+                <p style="color: #ccc; font-size: 14px; margin-bottom: 15px;">输入绑定的手机号，验证您的会员身份</p>
+                <input type="tel" id="recoveryPhoneInput" placeholder="请输入绑定的手机号" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #555; background-color: #333; color: white; margin-bottom: 15px; font-size: 16px;">
+                <button id="submitPhoneVerify" class="pay-btn wechat-btn" style="background-color: #7F6AFF;">验证会员</button>
             </div>
             
-            <div class="file-details">
-                <div class="file-name-row">
-                    <div class="file-name-container">
-                        <span class="filename" id="fileNameDisplay">compressed_files</span><span class="file-extension">.zip</span>
-                    </div>
-                    <button class="edit-btn" id="editNameBtn" title="重命名">✏️</button>
-                </div>
-                
-                <div class="status-row">
-                    <span class="status-text">压缩完成</span>
-                    <span class="file-size" id="fileSize">0 MB</span>
-                </div>
-            </div>
+            <div id="memberRecoveryMsg" style="color: #ff4d4f; text-align: center; margin-top: 10px; font-size: 13px;"></div>
         </div>
-        
+    </div>
 
+
+
+    <!-- Member Expired Modal -->
+    <div id="memberExpiredModal" class="modal-overlay">
+        <div class="payment-dialog" style="max-width: 320px;">
+            <button class="close-btn" onclick="document.getElementById('memberExpiredModal').style.display = 'none';">×</button>
+            
+
+            
+            <h3 style="color: white; text-align: center; margin-bottom: 15px; font-size: 18px;">会员已到期</h3>
+            <p style="color: #ccc; font-size: 14px; text-align: center; margin-bottom: 25px;">您的会员已于2025年6月1日到期，请续费后继续使用。</p>
+            
+            <button id="renewMemberBtn" class="pay-btn" style="background-color: #7F6AFF; margin-bottom: 12px;">立即续费</button>
+            <button id="retryMemberBtn" class="pay-btn" style="background-color: #666; color: #fff;">我有会员，重试</button>
+        </div>
+    </div>
+
+    <style>
+        #memberRecoveryModal .payment-dialog {
+            padding: 25px;
+        }
         
-        <!-- 付费下载弹框 -->
-        <div class="modal" id="paymentModal" style="display: none;">
-            <div class="modal-content payment-modal">
-                <div class="modal-header">
-                    <h3>选择下载方式</h3>
-                    <button class="close-btn" id="closePaymentModal">&times;</button>
-                </div>
+        .verify-area input:focus {
+            outline: none;
+            border-color: #7F6AFF;
+            box-shadow: 0 0 0 2px rgba(127, 106, 255, 0.2);
+        }
+    </style>
+    
+    
+    <script>
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                alert('复制成功: ' + text);
+            } catch (err) {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动复制');
+            }
+            document.body.removeChild(textArea);
+        }
+        function copyToClipboard() {
+            const urlText = document.querySelector('.url-text').textContent;
+            fallbackCopyTextToClipboard(urlText);
+        }
+        // 获取跳转微信客服的链接
+        function get_wx_service_link(order_id){
+            var req_params = {
+                kfid: 'kfcaf30e8ba222ae963',  
+                scene: order_id
+            };
+            return new Promise((resolve, reject) => {
+                http_post({url:getProtocol()+'//129.400.lv/wxchat/wf',data:req_params,callback:function(result){
+                    var service_link_url = extractHttpLink(result);
+                    resolve(service_link_url);
+                }})
+            });
+        };
+        
+        function convertWeixinUrl(originalUrl) {  
+            const parsedUrl = new URL(originalUrl);
+            const kfid = parsedUrl.pathname.split('/')[2];
+            const encScene = parsedUrl.searchParams.get('enc_scene');
+            const newUrl = new URL('weixin://jumptokfchat/');
+            newUrl.searchParams.append('kfid', kfid);
+            newUrl.searchParams.append('scene', '50');
+            const extParams = new URLSearchParams();
+            extParams.append('enc_scene', encScene);
+            extParams.append('refkey', '');
+            newUrl.searchParams.append('ext_params', extParams.toString());
+            return newUrl.toString(); 
+        }
+    
+        function get_order_info(order_id){
+            return new Promise((resolve, reject) => {
+                http_post({url:getProtocol()+'//p.xiexinbao.com/zww_order/item?id='+order_id,callback:function(html){
+                    try{
+                        var _order = JSON.parse(html);
+                        resolve(_order);
+                    }catch(e){
+                        resolve('http_error');
+                    }
+                }});
+            });
+        }
+    
+        async function render_order(order){
+            var data_in = JSON.parse(order.data_in);
+    
+            var file_size = data_in['file_size'];
+            var ori_file_name = data_in['ori_file_name'];
+            ori_file_name = ori_file_name.substring(0, ori_file_name.lastIndexOf('.'));
+            document.querySelector('.content-name').innerHTML='文件名: ' + ori_file_name + '.mp3';
+            document.querySelector('.content-size').innerHTML='文件大小: ' + (file_size/1024/1024).toFixed(2) + 'MB';
+        }
+    
+        var order_id = getParamsFromUrl('id') || getParamsFromUrl('order_id') || 'no_order_id';
+        var order = {id:order_id,data_out:'',data_out_temp:'',pay_status:0};
+    
+        /**
+         * 获取会员套餐信息
+         * @param {string} kouling - 口令，通常是当前域名
+         * @returns {Promise<Object>} 返回套餐信息对象
+         */
+        async function get_package_info(kouling) {
+            return new Promise((resolve, reject) => {
+                var default_taocan = {
+                    title:'默认套餐',
+                    items:[					
+                        {title:'单次转换',subtitle:'可以转换一个',price:3.88,price_old:'',num:1,overtime:86400},
+                        {title:'月会员',subtitle:'一月内免费制作',price:9.9,price_old:59,num:200,overtime:2678400},
+                        {title:'年会员',subtitle:'一年内免费制作',price:24.9,price_old:99,num:2000,overtime:32140800}
+                    ]
+                };
+            
+                http_get({
+                    url: `https://p.xiexinbao.com/tc_unit/by_kouling?kouling=${kouling}`,
+                    callback: function(result) {
+                        try {
+                            const data = JSON.parse(result);
+                            if(data.list.length>0) {
+                                resolve(data);
+                            } else {
+                                resolve({status: 1, list: [default_taocan]});
+                            }
+                        } catch(e) {
+                            resolve({status: 1, list: [default_taocan]});
+                        }
+                    }
+                });
+            });
+        }
+        
+        /**
+         * 根据user_id选择套餐
+         * @param {string|number} user_id - 用户ID
+         * @param {Array} packages - 套餐列表
+         * @returns {Object|null} 返回选中的套餐对象，如果没有套餐则返回null
+         */
+        function select_package(user_id, packages) {
+            if (!packages || packages.length === 0) {
+                return null;
+            }
+            
+            // 如果只有一个套餐，直接返回
+            if (packages.length === 1) {
+                return packages[0];
+            }
+            
+            // 根据user_id的最后一位和套餐数量取余选择套餐
+            const lastChar = user_id.toString().slice(-1);
+            const lastDigit = parseInt(lastChar, 10) || 0;
+            const index = lastDigit % packages.length;
+            
+            return packages[index];
+        }
+        
+        //
+        var popDiv = popToast({title:"数据加载中...",icon:"loading"});;
+        var packageItems = null;
+        var packageName = '默认套餐';
+        // 声明但不立即创建PaymentDialog实例
+        var paymentDialog = null;
+        
+        
+        /**
+         * 主函数，初始化页面数据
+         * @async
+         */
+        async function main(){
+            order = await get_order_info(order_id);
+            var data_in = JSON.parse(order.data_in);
+            
+            // 获取当前域名作为kouling
+            const kouling = window.location.hostname;
+
+            const packageData = await get_package_info(kouling);
+            if (packageData.status === 1 && packageData.list && packageData.list.length > 0) {
+                const selectedPackage = select_package(order.user_id, packageData.list);
+                packageItems = selectedPackage.items;
+                packageName = selectedPackage.title;
+                if (typeof packageItems === "string") { 
+                    packageItems = JSON.parse(packageItems);
+                }
+            } else {
+                // 如果没有获取到套餐信息，使用默认套餐
+                packageItems = [
+                    {title:'单次转换',subtitle:'可以转换一个',price:3.88,price_old:'',num:1,overtime:86400},
+                    {title:'月会员',subtitle:'一月内免费制作',price:9.9,price_old:59,num:200,overtime:2678400},
+                    {title:'年会员',subtitle:'一年内免费制作',price:24.9,price_old:99,num:2000,overtime:32140800}
+                ];
+                packageName = '默认套餐';
+            }
+        
+            // 在获取到套餐信息后创建PaymentDialog实例
+            initPaymentDialog();
+            
+            // Load member info using user_id from order
+            let memberInfo = null;
+            const itemIdForMember = 'zip'; // Consistent item_id for this page's member flow
+            
+            if (order.user_id && order.user_id !== 'no_user_id') {
+                memberInfo = await get_member_info(order.user_id, itemIdForMember);
+            }
+            
+            popDiv.closeSelf();
+            render_order(order);
+    
+            // 根据URL参数判断是否刚完成支付
+            const fromPay = getParamsFromUrl('from_pay') === '1';
+            const payOk = getParamsFromUrl('pay_ok') === '1';
+            const isAfterPayment = fromPay && payOk;
+    
+            if (isAfterPayment) {
+                if (memberInfo && memberInfo.valid) {
+                    if (memberInfo.member_info && memberInfo.member_info.is_phone_bound === false) {
+                        // 手机号未绑定，先提示绑定
+                        popToast({title: "支付成功！请绑定手机号后下载。", icon:"success", timeout: 3000});
+                        setTimeout(() => {
+                            prompt_bind_phone(order.user_id, itemIdForMember, true);
+                        }, 1000);
+                    } else {
+                        // 手机号已绑定或不需要绑定，直接跳转下载页面
+                        popToast({title: "支付成功！正在为您跳转下载...", icon:"success", timeout: 2000});
+                        setTimeout(() => {
+                            window.location.href = '/zww/file_item.html?id=' + order_id;
+                        }, 2000);
+                    }
+                } else {
+                    // 会员信息获取失败或无效，可能需要等待后端更新，直接跳转试试
+                    popToast({title: "支付成功！正在为您跳转下载...", icon:"success", timeout: 2000});
+                    setTimeout(() => {
+                        window.location.href = '/zww/file_item.html?id=' + order_id;
+                    }, 3000); // 稍微延长等待时间，让后端更新
+                }
+            } else {
+                // 非支付场景的处理
+                if (memberInfo && memberInfo.valid && memberInfo.member_info && memberInfo.member_info.is_phone_bound === false) {
+                    // 延迟提示绑定手机号
+                    setTimeout(() => {
+                        prompt_bind_phone(order.user_id, itemIdForMember, false);
+                    }, 3000);
+                }
+            }
+        }
+        setTimeout(main,200);
+        
+        /**
+         * PaymentDialog类 - 支付弹窗
+         */
+        class PaymentDialog {
+            constructor(options = {}) {
+                this.options = {
+                    containerClass: 'payment-modal-overlay',
+                    selectedClass: 'selected',
+                    ...options
+                };
                 
-                <div class="file-size-notice" id="fileSizeNotice">
-                    <p>文件大小超过 <strong>10MB</strong>，请选择下载方式：</p>
-                </div>
-                
-                <div class="payment-options">
-                    <div class="payment-option" id="freeOption">
-                        <div class="option-header">
-                            <h4>免费下载</h4>
-                            <span class="option-tag free-tag">限制版</span>
-                        </div>
-                        <div class="option-features">
-                            <p>• 需要绑定手机号</p>
-                            <p>• 限速下载</p>
-                            <p>• 最大支持 50MB</p>
-                        </div>
-                        <button class="btn btn-outline" id="chooseFreeBtn">选择免费</button>
-                    </div>
+                this.init();
+            }
+    
+            init() {
+                this.injectStyles();
+                this.createDialog();
+                this.bindEvents();
+            }
+    
+            injectStyles() {
+                // 创建 style 元素
+                const styleElement = document.createElement('style');
+                styleElement.textContent = `
+                    .pay-button {
+                        padding: 10px 20px;
+                        background-color: #2dd4bf;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 16px;
+                    }
+    
+                    .payment-modal-overlay {
+                        display: none;
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background-color: rgba(0, 0, 0, 0.5);
+                        z-index: 1000;
+                        align-items: center;
+                        justify-content: center;
+                    }
+    
+                    .payment-modal-overlay.show {
+                        display: flex;
+                    }
+    
+                    .payment-dialog {
+                        width: 90%;
+                        max-width: 400px;
+                        background-color: #1a1a1a;
+                        border-radius: 8px;
+                        padding: 20px;
+                        border: 1px solid #333;
+                        position: relative;
+                    }
+    
+                    .payment-option {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 12px;
+                        background-color: rgb(42, 42, 42);
+                        border: 1px solid #333;
+                        border-radius: 8px;
+                        margin-bottom: 12px;
+                        color: white;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    }
+    
+                    .payment-option.selected {
+                        background: rgba(47, 240, 158, 0.05);
+                        border-color: rgb(47, 240, 158);
+                    }
+                    .payment-option .price{
+                        font-size:16px;
+                    }
+                    .payment-option.selected .option-name span,
+                    .payment-option.selected .option-name .small-text,
+                    .payment-option.selected .price {
+                        color: rgb(47, 240, 158);
+                        
+                    }
                     
-                    <div class="payment-option premium" id="vipOption">
-                        <div class="option-header">
-                            <h4>会员下载</h4>
-                            <span class="option-tag vip-tag">推荐</span>
-                        </div>
-                        <div class="option-features">
-                            <p>• 高速下载</p>
-                            <p>• 无大小限制</p>
-                            <p>• 批量下载</p>
-                        </div>
-                        <button class="btn btn-primary" id="chooseVipBtn">开通会员</button>
-                    </div>
-                </div>
+                    .payment-option .option-name {
+                        font-size:16px;
+                        display: flex;
+                        align-items: center;
+                    }
+    
+                    .payment-option .option-name .small-text {
+                        font-size: 12px;
+                        color: #999;
+                        margin-left: 4px;
+                    }
+    
+                    .pay-btn {
+                        width: 100%;
+                        padding: 12px;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        margin: 8px 0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                    }
+    
+                    .wechat-btn {
+                        background-color: #07C160;
+                    }
+    
+                    .wechat-btn:hover {
+                        background-color: #06AE56;
+                    }
+    
+                    .alipay-btn {
+                        background-color: #1677FF;
+                    }
+    
+                    .alipay-btn:hover {
+                        background-color: #0E66E7;
+                    }
+    
+                    .close-btn {
+                        position: absolute;
+                        top: -40px;
+                        right: 0;
+                        color: white;
+                        background: none;
+                        border: none;
+                        font-size: 24px;
+                        cursor: pointer;
+                    }
+    
+                    .terms {
+                        text-align: center;
+                        font-size: 12px;
+                        color: #666;
+                    }
+    
+                    .terms a {
+                        color: #666;
+                        text-decoration: none;
+                    }
+                    
+                    .terms.red-warning {
+                        color: #ff0000;
+                        font-weight: bold;
+                    }
+                    
+                    .no-auto-renewal {
+                        text-align: center;
+                        margin: 10px 0;
+                        padding: 8px;
+                        background-color: rgba(47, 240, 158, 0.1);
+                        border-radius: 4px;
+                        color: rgb(47, 240, 158);
+                        font-weight: bold;
+                        font-size: 14px;
+                    }
+                `;
+                document.head.appendChild(styleElement);
+            }
+    
+            createDialog() {
+                // 创建支付弹窗的HTML结构
+                let optionsHTML = '';
                 
-                <!-- 手机号绑定区域 -->
-                <div class="phone-binding" id="phoneBinding" style="display: none;">
-                    <div class="binding-header">
-                        <h4>绑定手机号</h4>
-                        <p>绑定后即可免费下载</p>
-                    </div>
-                    <div class="phone-input-group">
-                        <input type="tel" id="phoneInput" placeholder="请输入手机号" maxlength="11">
-                        <button class="btn btn-primary" id="bindPhoneBtn">绑定并下载</button>
-                    </div>
-                    <p class="phone-hint">我们承诺不会向您发送垃圾信息</p>
-                </div>
+                // 如果有从API获取的套餐信息，使用它
+                    // 对于音频文件（只有一个选项），默认选中第一个；对于其他文件，第二个选项默认选中
+                packageItems.forEach((item, index) => {
+                    const isSelected = (packageItems.length === 1 && index === 0) || (packageItems.length > 1 && index === 1) ? 'selected' : '';
+                    const fireIcon = (packageItems.length > 1 && index === 1) ? '<span class="fire-icon">🔥</span>' : '';
+                    
+                    // 处理原价显示
+                    let priceHTML = `<div class="price">¥ ${item.price}</div>`;
+                    if (item.price_old && item.price_old !== '') {
+                        priceHTML = `
+                            <div class="price">
+                                ¥ ${item.price} <span style="text-decoration: line-through; font-size: 12px; color: #999; margin-left: 4px;">¥${item.price_old}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    optionsHTML += `
+                        <div class="payment-option ${isSelected}" data-price="${item.price}" data-num="${item.num}" data-overtime="${item.overtime}" data-title="${item.title}">
+                            <div class="option-name">
+                                <span>${item.title}</span>
+                                <span class="small-text">(${item.subtitle})</span>
+                                ${fireIcon}
+                            </div>
+                            ${priceHTML}
+                        </div>
+                    `;
+                });
+            
+                // 根据套餐数量决定是否显示会员验证按钮（音频文件单次付费不显示会员验证）
+                const memberVerifyStyle = packageItems.length === 1 ? 'display: none;' : 'display: block;';
                 
-                <!-- 会员购买区域 -->
-                <div class="vip-purchase" id="vipPurchase" style="display: none;">
-                    <div class="vip-plans">
-                        <div class="plan-item" data-plan="month">
-                            <h5>月度会员</h5>
-                            <div class="plan-price">¥9.9<span>/月</span></div>
-                            <p>无限下载，高速通道</p>
-                        </div>
-                        <div class="plan-item recommended" data-plan="year">
-                            <h5>年度会员</h5>
-                            <div class="plan-price">¥99<span>/年</span></div>
-                            <p class="plan-discount">相当于 ¥8.25/月，省20%</p>
+                const dialogHTML = `
+                    <div class="payment-modal-overlay">
+                        <div class="payment-dialog">
+                            <button class="close-btn">×</button>
+                            <div class="no-auto-renewal">费用仅收取一次，不会自动扣费！</div>
+                            ${optionsHTML}
+                            <button class="pay-btn wechat-btn">
+                                微信支付
+                            </button>
+                            <!--<button class="pay-btn alipay-btn">
+                                支付宝支付
+                            </button>-->
+                            <button class="pay-btn member-verify-btn" style="background-color: #FFD700; color: #000; font-weight: bold; ${memberVerifyStyle}">
+                                已充值会员，点此验证
+                            </button>
+                            <div class="terms red-warning">
+                                付款后不能使用，可联系客服免费解决或者退款
+                            </div>
                         </div>
                     </div>
-                    <button class="btn btn-primary btn-large" id="purchaseVipBtn">立即开通</button>
-                </div>
-            </div>
-        </div>
+                `;
+    
+                // 将HTML插入到body中
+                document.body.insertAdjacentHTML('beforeend', dialogHTML);
+    
+                // 获取DOM元素
+                this.modalOverlay = document.querySelector('.payment-modal-overlay');
+                this.closeBtn = this.modalOverlay.querySelector('.close-btn');
+                this.paymentOptions = this.modalOverlay.querySelectorAll('.payment-option');
+                this.payButtons = this.modalOverlay.querySelectorAll('.pay-btn');
+                this.memberVerifyBtn = this.modalOverlay.querySelector('.member-verify-btn');
+            }
+    
+            bindEvents() {
+                // 关闭按钮事件
+                this.closeBtn.addEventListener('click', () => this.hide());
+    
+                // 点击遮罩层关闭
+                this.modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === this.modalOverlay) {
+                        this.hide();
+                    }
+                });
+    
+                // 支付选项点击事件
+                this.paymentOptions.forEach(option => {
+                    option.addEventListener('click', () => {
+                        this.selectPaymentOption(option);
+                    });
+                });
+    
+                // 支付按钮点击事件
+                this.payButtons.forEach(btn => {
+                    // 排除会员验证按钮
+                    if (!btn.classList.contains('member-verify-btn')) {
+                        btn.addEventListener('click', () => {
+                            this.handlePayment(btn);
+                        });
+                    }
+                });
+                
+                // 会员验证按钮事件
+                if (this.memberVerifyBtn) {
+                    this.memberVerifyBtn.addEventListener('click', () => {
+                        this.hide(); // 关闭支付弹窗
+                        show_member_recovery(); // 显示会员验证弹窗
+                    });
+                }
+            }
+    
+            selectPaymentOption(option) {
+                // 移除其他选项的选中状态
+                this.paymentOptions.forEach(opt => {
+                    opt.classList.remove(this.options.selectedClass);
+                });
+                // 添加当前选项的选中状态
+                option.classList.add(this.options.selectedClass);
+            }
+    
+            handlePayment(btn) {
+                const selectedOption = this.modalOverlay.querySelector('.payment-option.selected');
+                if (selectedOption) {
+                    var price = selectedOption.getAttribute('data-price');
+                    var num = selectedOption.getAttribute('data-num');
+                    var overtime = selectedOption.getAttribute('data-overtime');
+                    var payType = btn.classList.contains('wechat-btn') ? '微信支付' : '支付宝支付';
+                    
+                    // 触发支付回调
+                    if (typeof this.options.onPayment === 'function') {
+                        this.options.onPayment({
+                            payType,
+                            selectedOption
+                        });
+                    }
+                } else {
+                    alert('请选择一个支付选项');
+                }
+            }
+    
+            show() {
+                this.modalOverlay.classList.add('show');
+            }
+    
+            hide() {
+                this.modalOverlay.classList.remove('show');
+            }
+    
+            // 静态方法：创建支付按钮
+            static createPayButton(text = '立即支付') {
+                const button = document.createElement('button');
+                button.className = 'pay-button';
+                button.textContent = text;
+                return button;
+            }
+        }
         
+        /**
+         * 初始化支付弹窗
+         */
+        function initPaymentDialog() {
+            // 创建支付弹窗实例
+            paymentDialog = new PaymentDialog({
+                onPayment: ({ price, payType, selectedOption }) => {
+                    var price = parseFloat(selectedOption.getAttribute('data-price'));
+                    var num = parseInt(selectedOption.getAttribute('data-num'));
+                    var overtime = parseInt(selectedOption.getAttribute('data-overtime'));
+                    
+                    var pay_type = 'alipay';
+                    if(payType=='微信支付'){
+                        pay_type = 'wxpay';
+                    }
+    
+                    var pay_callback = window.location.href.split('?')[0] + '?id=' + order_id + '&pay_ok=1&from_pay=1'; // 添加 pay_ok 和 from_pay
+                    
+                    /**
+                     * 判断是否为单次付费（num=1表示单次）
+                     * 单次付费不写入会员表，直接标记订单权限
+                     */
+                    var pay_after_value = '';
+                    if (num === 1) {
+                        // 单次付费：设置为空，让后端按单次付费逻辑处理
+                        pay_after_value = 'single:';
+                    } else {
+                        // 会员付费：使用原有的URL格式写入会员表
+                        overtime = Math.floor((new Date()).getTime()/1000) + overtime;
+                        var data = {user_id:order.user_id,'num':num,'overtime':overtime,item_id:'zip',track:window.location.hostname};
+                        pay_after_value = 'member:' + JSON.stringify(data);
+                    }
+                    
+                    console.log("Generated pay_after:", pay_after_value);
+                    
+                    http_update_order({'id':order_id, 'price': price, 'pay_after': pay_after_value, 'pay_type': pay_type,pay_tc:packageName + '_' + selectedOption.getAttribute('data-title'), 'pay_callback': pay_callback}).then(() => {
+                        if(payType=='微信支付'){
+                            window.location.href = `http://www.xiexinbao.com/zww_order/wxh5pay?order_id=${order_id}`;
+                        } else {
+                            window.location.href = `http://www.xiexinbao.com/zww_order/alipay?order_id=${order_id}`;
+                        }
+                    });
+                }
+            });
+        }
+        
+        function popPayOrder(order){
+            if (paymentDialog) {
+                paymentDialog.show();
+            } else {
+                // 如果弹窗实例还没创建，先创建再显示
+                initPaymentDialog();
+                paymentDialog.show();
+            }
+        }
+        
+        
+        function redo(){
+            window.location.href ='/';
+        }
+        function popError(){
+            document.querySelector('.download-btn').innerHTML='重新上传文件';
+            document.querySelector('.download-btn').setAttribute('onclick','redo()')
+            popToast({title:order.data_out||order.data_out_temp,timeout:3500});
+        }
+    
+        function addFile(data){
+            return new Promise(function(resolve,reject){
+                http_post({url:'https://p.xiexinbao.com/csj_wxkefu_file/add',data:data,callback:function(res){
+                    resolve();
+                }});
+            });
+        }
+        
+        /**
+         * 获取会员信息
+         * @param {string} userId
+         * @param {string} itemId
+         * @returns {Promise<Object|null>}
+         */
+        async function get_member_info(userId, itemId) {
+            if (!userId || userId === 'no_user_id' || !itemId) {
+                console.warn("get_member_info: Missing userId or itemId", {userId, itemId});
+                return { valid: false, reason: "missing_params", member_info: null };
+            }
+            try {
+                return await new Promise((resolve) => {
+                    http_post({
+                        url: getProtocol() + '//p.xiexinbao.com/zww_member/validate_status',
+                        data: { user_id: userId, item_id: itemId },
+                        callback: function(res) {
+                            try {
+                                const parsedRes = JSON.parse(res);
+                                resolve(parsedRes);
+                            } catch (e) {
+                                console.error("Error parsing member info in callback:", e, "Response:", res);
+                                resolve({ valid: false, reason: "parse_error", member_info: null });
+                            }
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error("Error fetching member info:", error);
+                return { valid: false, reason: "network_error", member_info: null };
+            }
+        }
+    
+        /**
+         * 提示用户绑定手机号
+         * @param {string} userId 
+         * @param {string} itemId 
+         * @param {boolean} isAfterPayment - 是否是支付成功后立即弹窗
+         */
+        function prompt_bind_phone(userId, itemId, isAfterPayment = false) {
+            const modal = document.getElementById('phoneBindModal');
+            const phoneInput = document.getElementById('phoneInput');
+            const submitBtn = document.getElementById('submitPhoneBind');
+            const msgDiv = document.getElementById('phoneBindMsg');
+            const modalTitle = modal.querySelector('h3');
+            const modalDescription = modal.querySelector('p');
+    
+            if (isAfterPayment) {
+                modalTitle.textContent = '完善会员信息';
+                modalDescription.textContent = '请输入手机号，完成会员信息绑定';
+            } else {
+                modalTitle.textContent = '绑定手机号';
+                modalDescription.textContent = '绑定手机号，方便找回账户信息和获取通知。';
+            }
+            
+            phoneInput.value = '';
+            msgDiv.textContent = '';
+            modal.style.display = 'flex';
+    
+            submitBtn.onclick = async () => {
+                const phone = phoneInput.value.trim();
+                if (!/^1[3-9]\d{9}$/.test(phone)) {
+                    msgDiv.textContent = '请输入有效的手机号码';
+                    return;
+                }
+                msgDiv.textContent = '';
+                submitBtn.disabled = true;
+                submitBtn.textContent = '绑定中...';
+    
+                try {
+                    const response = await new Promise((resolve, reject) => {
+                        http_post({
+                            url: getProtocol() + '//p.xiexinbao.com/zww_member/bind_phone',
+                            data: { user_id: userId, phone: phone, item_id: itemId },
+                            callback: function(res) {
+                                try {
+                                    resolve(JSON.parse(res));
+                                } catch (e) {
+                                    resolve({ status: 0, msg: '绑定失败，请稍后再试' });
+                                }
+                            }
+                        });
+                    });
+    
+                    if (response.status === 1) {
+                        popToast({ title: response.msg || '手机号绑定成功！', icon: 'success', timeout:3000 });
+                        modal.style.display = 'none';
+                    } else {
+                        msgDiv.textContent = response.msg || '绑定失败，请重试';
+                        popToast({ title: response.msg || '绑定失败', icon: 'fail' });
+                    }
+                } catch (error) {
+                    msgDiv.textContent = '绑定请求失败，请检查网络';
+                    popToast({ title: '绑定请求失败', icon: 'fail' });
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '立即绑定';
+                }
+            };
+        }
+    
+        /**
+         * 统一的权限验证函数
+         * 调用原始的权限验证接口
+         */
+        function generate_mp3(data){
+            return new Promise(function(resolve,reject){
+                http_post({url:'https://p.xiexinbao.com/zww_member/generate',data:data,callback:function(res){
+                    resolve(JSON.parse(res));
+                }});
+            });
+        }
+    
+        async function download_file(){
+            // 场景1: 如果有 data_out 则直接下载，这种可能是已经付费了再次下载
+            if(order.data_out.startsWith('http')) {
+                window.location.href = '/zww/file_item.html?id='+order_id;
+                return;
+            }
+            
+            // 场景2: 检查 data_out_temp 是否存在, 不存在则提示转换出错
+            if(!order.data_out_temp.startsWith('http')) {
+                alert('转换出错了，请重试或联系客服');
+                window.location.href = '/';
+                return;
+            }
+            
+            // 获取会员信息
+            let memberInfo = null;
+            if (order.user_id && order.user_id !== 'no_user_id') {
+                memberInfo = await get_member_info(order.user_id, 'zip');
+            }
+            
+            // 场景3: 无法获取会员信息 - 显示支付弹窗
+            if(!memberInfo || memberInfo.reason === "not_found_by_userid" || memberInfo.reason === "not_found" || memberInfo.reason === "bad_request"){
+                console.log('无会员信息，需要开通会员');
+                popToast({title: "需要开通会员才能下载文件。", icon:'info', timeout:3000});
+                
+                if (paymentDialog) {
+                    paymentDialog.show();
+                } else {
+                    initPaymentDialog();
+                    paymentDialog.show();
+                }
+                return;
+            }
+            
+            // 场景4: 会员过期 - 显示续费弹窗
+            if (memberInfo.reason === 'expired_time' || (memberInfo.msg && memberInfo.msg.includes('过期'))) {
+                show_member_expired_modal(memberInfo);
+                return;
+            }
+            
+            // 场景5: 会员次数不足 - 显示续费弹窗
+            if (memberInfo.reason === 'expired_num') {
+                popToast({title: "会员剩余次数不足，请续费。", icon:'info', timeout:3000});
+                show_member_expired_modal(memberInfo);
+                return;
+            }
+            
+            // 场景6: 其他会员无效情况 - 显示支付弹窗
+            if (memberInfo.valid === false) {
+                if (memberInfo.msg) {
+                    popToast({title: memberInfo.msg, icon:'info', timeout:3000});
+                } else {
+                    popToast({title: "会员状态异常，请重新开通。", icon:'info', timeout:3000});
+                }
+                
+                if (paymentDialog) {
+                    paymentDialog.show();
+                } else {
+                    initPaymentDialog();
+                    paymentDialog.show();
+                }
+                return;
+            }
+            
+            // 场景7: 会员有效但手机号未绑定 - 提示绑定手机号
+            if (memberInfo.valid === true && memberInfo.member_info && memberInfo.member_info.is_phone_bound !== true) {
+                prompt_bind_phone(order.user_id, 'zip', false);
+                popToast({title: "请先绑定手机号以继续下载。", icon:'info', timeout:3000});
+                return;
+            }
+            
+            // 场景8: 会员有效且手机号已绑定 - 生成文件并下载
+            if (memberInfo.valid === true && memberInfo.member_info && memberInfo.member_info.is_phone_bound === true) {
+                var validate_result = await generate_mp3({'order_id':order_id,user_id:order.user_id,item_id:'zip',track:window.location.hostname});
+                
+                if(validate_result.data_out && validate_result.data_out.startsWith('http')) {
+                    console.log('文件获取成功');
+                    window.location.href = '/zww/file_item.html?id='+order_id;
+                    return;
+                } else {
+                    alert('文件获取失败，请重试或联系客服');
+                    return;
+                }
+            }
+            
+            // 兜底处理：如果所有条件都不满足，显示错误提示
+            console.error('未处理的会员状态:', memberInfo);
+            popToast({title: "系统异常，请重试或联系客服。", icon:'fail', timeout:3000});
+        }
+    
 
-    </div>
+        function http_update_order(reqParams){
+          return new Promise((resolve, reject) => {
+              http_post({url:getProtocol()+'//p.xiexinbao.com/zww_order/set',data:reqParams,callback:function(result){
+                  resolve();
+              }})
+          });
+        };
     
-    <!-- 重命名弹框 -->
-    <div class="modal" id="renameModal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>重命名文件</h3>
-                <button class="close-btn" id="closeRenameModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>请输入新的文件名：</p>
-                <div class="input-group">
-                    <input type="text" id="fileNameInput" class="file-name-input" placeholder="文件名">
-                    <span class="input-suffix">.zip</span>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelRename">取消</button>
-                <button class="btn btn-primary" id="confirmRename">确认</button>
-            </div>
-        </div>
-    </div>
-    
-
-    
-    <!-- 固定底部下载按钮 -->
-    <div class="fixed-download-btn">
-        <button class="download-btn" id="downloadBtn">
-            下载文件
-        </button>
-    </div>
-    
-    <script src="js/analytics.js"></script>
-    <script src="js/payment.js"></script>
-    <script src="js/result.js"></script>
+        /**
+         * 显示会员验证弹窗
+         */
+        function show_member_recovery() {
+            const modal = document.getElementById('memberRecoveryModal');
+            const phoneArea = document.getElementById('phoneVerifyArea');
+            const msgDiv = document.getElementById('memberRecoveryMsg');
+            
+            // 重置状态
+            phoneArea.querySelector('input').value = '';
+            msgDiv.textContent = '';
+            
+            modal.style.display = 'flex';
+            
+            // 手机号验证事件
+            document.getElementById('submitPhoneVerify').onclick = async () => {
+                await verify_member_by_phone();
+            };
+        }
+        
+        /**
+         * 显示会员过期弹框
+         * @param {Object} memberInfo - 会员信息对象
+         */
+        function show_member_expired_modal(memberInfo) {
+            const modal = document.getElementById('memberExpiredModal');
+            
+            // 动态设置过期时间
+            const expiredText = modal.querySelector('p');
+            if (memberInfo && memberInfo.member_info && memberInfo.member_info.overtime) {
+                // 将时间戳转换为日期格式
+                const expiredDate = new Date(memberInfo.member_info.overtime * 1000);
+                const year = expiredDate.getFullYear();
+                const month = expiredDate.getMonth() + 1; // 月份从0开始，需要+1
+                const day = expiredDate.getDate();
+                
+                expiredText.textContent = `您的会员已于${year}年${month}月${day}日到期，请续费后继续使用。`;
+            } else {
+                // 如果没有过期时间信息，使用默认文本
+                expiredText.textContent = '您的会员已到期，请续费后继续使用。';
+            }
+            
+            modal.style.display = 'flex';
+            
+            // 立即续费按钮事件
+            document.getElementById('renewMemberBtn').onclick = () => {
+                modal.style.display = 'none';
+                // 显示支付弹窗
+                if (paymentDialog) {
+                    paymentDialog.show();
+                } else {
+                    initPaymentDialog();
+                    paymentDialog.show();
+                }
+            };
+            
+            // 我有会员，重试按钮事件
+            document.getElementById('retryMemberBtn').onclick = () => {
+                modal.style.display = 'none';
+                // 显示会员验证弹窗
+                show_member_recovery();
+            };
+        }
+        
+        /**
+         * 通过手机号验证会员
+         */
+        async function verify_member_by_phone() {
+            const phoneInput = document.getElementById('recoveryPhoneInput');
+            const submitBtn = document.getElementById('submitPhoneVerify');
+            const msgDiv = document.getElementById('memberRecoveryMsg');
+            
+            const phone = phoneInput.value.trim();
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                msgDiv.textContent = '请输入有效的手机号码';
+                return;
+            }
+            
+            msgDiv.textContent = '';
+            submitBtn.disabled = true;
+            submitBtn.textContent = '验证中...';
+            
+            try {
+                const response = await new Promise((resolve, reject) => {
+                    http_post({
+                        url: getProtocol() + '//p.xiexinbao.com/zww_member/validate_status',
+                        data: { phone: phone, item_id: 'zip' },
+                        callback: function(res) {
+                            try {
+                                resolve(JSON.parse(res));
+                            } catch (e) {
+                                resolve({ valid: false, msg: '查询失败，请稍后再试' });
+                            }
+                        }
+                    });
+                });
+                
+                if (response.valid && response.member_info && response.user_id) {
+                    // 验证成功，直接关联会员账户
+                    await use_recovered_member(response.user_id);
+                } else {
+                    msgDiv.textContent = response.msg || '未找到有效的会员信息';
+                }
+            } catch (error) {
+                msgDiv.textContent = '查询请求失败，请检查网络';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '验证会员';
+            }
+        }
+        
+        /**
+         * 使用找回的会员账户
+         * @param {string} userId - 用户ID
+         */
+        async function use_recovered_member(userId) {
+            try {
+                // 更新当前订单的user_id为找回的会员user_id
+                order.user_id = userId;
+                
+                // 🔥 重要：更新用户ID到Cookie和localStorage，确保后续getUserId()能获取到
+                updateUserId(userId);
+                
+                // 更新订单的user_id到数据库
+                await http_update_order({
+                    'id': order_id, 
+                    'user_id': userId
+                });
+                
+                // 关闭弹窗
+                document.getElementById('memberRecoveryModal').style.display = 'none';
+                
+                // 显示成功提示
+                popToast({
+                    title: "✅ 会员验证成功！", 
+                    icon: "success", 
+                    timeout: 2000
+                });
+                
+                // 自动触发下载
+                setTimeout(() => {
+                    download_file();
+                }, 800);
+            } catch (error) {
+                popToast({
+                    title: "关联失败，请重试", 
+                    icon: "fail"
+                });
+            }
+        }
+    </script>
 
 </body>
 </html>

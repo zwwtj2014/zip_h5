@@ -1,0 +1,855 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+	<title>文件管理</title>
+	<style>
+	:root {
+		--primary-color: #2979ff;
+		--secondary-color: #ff6d00;
+		--text-color: #333333;
+		--light-text: #666666;
+		--background: #f5f5f5;
+		--card-bg: #ffffff;
+		--border-radius: 12px;
+		--button-radius: 8px;
+		--box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+	}
+	
+	* {
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
+	}
+	
+	body, html {
+		height: 100%;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		background-color: var(--background);
+		color: var(--text-color);
+		font-size: 16px;
+		line-height: 1.5;
+	}
+	
+	.container {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 24px 16px;
+		min-height: 100%;
+	}
+	
+	.file-card {
+		background-color: var(--card-bg);
+		border-radius: var(--border-radius);
+		box-shadow: var(--box-shadow);
+		padding: 32px;
+		margin-top: 24px;
+		text-align: center;
+	}
+	
+	.file-icon {
+		width: 120px;
+		height: 120px;
+		margin: 0 auto 24px;
+		border-radius: 16px;
+		overflow: hidden;
+		box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+	}
+	
+	.file-icon img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	
+	.file-name {
+		font-size: 24px;
+		font-weight: 600;
+		margin-bottom: 16px;
+		word-break: break-word;
+		color: var(--text-color);
+	}
+	
+	.file-info {
+		margin-bottom: 32px;
+		color: var(--light-text);
+		font-size: 14px;
+	}
+	
+	.file-info p {
+		margin: 8px 0;
+	}
+	
+	.action-buttons {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		max-width: 350px;
+		margin: 0 auto;
+	}
+	
+	.btn {
+		padding: 16px 24px;
+		border: none;
+		border-radius: var(--button-radius);
+		font-size: 18px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+	}
+	
+	.btn-primary {
+		background-color: var(--primary-color);
+		color: white;
+		box-shadow: 0 4px 8px rgba(41, 121, 255, 0.3);
+	}
+	
+	.btn-primary:hover {
+		background-color: #1565c0;
+		transform: translateY(-2px);
+		box-shadow: 0 6px 12px rgba(41, 121, 255, 0.4);
+	}
+	
+	.btn-secondary {
+		background-color: var(--secondary-color);
+		color: white;
+		box-shadow: 0 4px 8px rgba(255, 109, 0, 0.3);
+	}
+	
+	.btn-secondary:hover {
+		background-color: #e65100;
+		transform: translateY(-2px);
+		box-shadow: 0 6px 12px rgba(255, 109, 0, 0.4);
+	}
+	
+	/* 加载动画 */
+	.loader-container {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: var(--background);
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+	}
+	
+	.loader {
+		width: 48px;
+		height: 48px;
+		border: 5px solid #ddd;
+		border-bottom-color: var(--primary-color);
+		border-radius: 50%;
+		animation: rotate 1s linear infinite;
+	}
+	
+	@keyframes rotate {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
+	
+	.loader-text {
+		margin-top: 16px;
+		font-size: 16px;
+		color: var(--light-text);
+	}
+	
+	/* 模态框样式 */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(0, 0, 0, 0.6);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+		backdrop-filter: blur(3px);
+	}
+	
+	.modal-content {
+		background-color: var(--card-bg);
+		border-radius: var(--border-radius);
+		box-shadow: var(--box-shadow);
+		width: 90%;
+		max-width: 420px;
+		padding: 32px;
+		animation: modal-in 0.3s ease;
+	}
+	
+	@keyframes modal-in {
+		from { transform: scale(0.8); opacity: 0; }
+		to { transform: scale(1); opacity: 1; }
+	}
+	
+	.modal-title {
+		font-size: 20px;
+		font-weight: 600;
+		margin-bottom: 16px;
+		color: var(--text-color);
+	}
+	
+	.modal-message {
+		margin-bottom: 24px;
+		color: var(--light-text);
+		line-height: 1.6;
+	}
+	
+	.modal-input {
+		width: 100%;
+		padding: 12px 16px;
+		border: 2px solid #ddd;
+		border-radius: var(--button-radius);
+		font-size: 16px;
+		margin-bottom: 16px;
+		transition: border-color 0.3s;
+	}
+	
+	.modal-input:focus {
+		border-color: var(--primary-color);
+		outline: none;
+	}
+	
+	.modal-buttons {
+		display: flex;
+		gap: 12px;
+		justify-content: flex-end;
+	}
+	.modal-button {
+		padding: 8px 20px;
+		border-radius: 20px;
+		cursor: pointer;
+		margin: 0 10px;
+		font-size: 14px;
+	}
+	.modal-btn {
+		padding: 10px 20px;
+		border: none;
+		border-radius: var(--button-radius);
+		font-size: 16px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.modal-button.primary {
+		background-color: #07c160;
+		color: white;
+		border: none;
+	}
+	.modal-button.secondary {
+		background-color: #f5f5f5;
+		color: #333;
+		border: 1px solid #ddd;
+	}
+	.modal-btn-primary {
+		background-color: var(--primary-color);
+		color: white;
+	}
+	
+	.modal-btn-secondary {
+		background-color: #e0e0e0;
+		color: var(--text-color);
+	}
+	
+	/* 步骤提示样式 */
+	.step-item {
+		position: relative;
+		padding-left: 36px;
+		margin-bottom: 20px;
+	}
+	
+	.step-number {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 28px;
+		height: 28px;
+		background-color: var(--primary-color);
+		color: white;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 600;
+	}
+	
+	.url-box {
+		background: #eee;
+		padding: 12px;
+		border-radius: 8px;
+		word-break: break-all;
+		margin: 12px 0;
+		font-size: 14px;
+		cursor: pointer;
+		transition: background-color 0.2s;
+	}
+	
+	.url-box:hover {
+		background: #e0e0e0;
+	}
+	
+	.url-tip {
+		font-size: 12px;
+		color: #999;
+		margin-bottom: 12px;
+	}
+	
+	.copy-button {
+		background-color: var(--primary-color);
+		color: white;
+		border: none;
+		border-radius: var(--button-radius);
+		padding: 8px 16px;
+		font-size: 14px;
+		cursor: pointer;
+		float: right;
+		margin-bottom: 12px;
+		transition: background-color 0.2s;
+	}
+	
+	.copy-button:hover {
+		background-color: #1565c0;
+	}
+	
+	.clearfix::after {
+		content: "";
+		display: table;
+		clear: both;
+	}
+	
+	/* 响应式调整 */
+	@media (min-width: 768px) {
+		.action-buttons {
+			flex-direction: row;
+		}
+		
+		.btn {
+			flex: 1;
+		}
+	}
+	
+	@media (max-width: 480px) {
+		.file-card {
+			padding: 24px 16px;
+		}
+		
+		.modal-content {
+			padding: 24px 16px;
+		}
+	}
+	</style>
+	<script>
+		function http_post(req){var xhr=new XMLHttpRequest();xhr.ontimeout=function(e){xhr.abort()};xhr.onerror=function(e){};xhr.open("POST",req.url,true);xhr.onreadystatechange=function(){if(xhr.readyState==4){req.callback(xhr.responseText)}};xhr.timeout=10*1000;xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded; charset=UTF-8");var post_data=[];var postData=req.data;postData=(function(value){for(var key in value){if(typeof(value[key])=='object'){post_data.push(key+"="+encodeURIComponent(JSON.stringify(value[key])))}else{post_data.push(key+"="+encodeURIComponent(value[key]))}};return post_data.join('&')}(postData));xhr.send(postData)}
+		function getBrowser(){var e=(navigator.userAgent||navigator.vendor||window.opera).toLowerCase(),r=[{name:"wx",regex:/micromessenger/i},{name:"edge",regex:/edg\/|edge\/|edga\//i},{name:"qq",regex:/qqbrowser/i},{name:"huawei",regex:/huaweibrowser/i},{name:"honor",regex:/hmbrowser|bdhonorbrowser/i},{name:"xiaomi",regex:/xiaomi|mi/i},{name:"uc",regex:/ucbrowser/i},{name:"samsung",regex:/samsungbrowser/i},{name:"intel",regex:/trident/i},{name:"opera",regex:/opr|opera/i},{name:"chromium",regex:/chromium/i},{name:"firefox",regex:/firefox/i},{name:"quark",regex:/quark/i},{name:"oppo",regex:/heytapbrowser|oppobrowser/i},{name:"vivo",regex:/vivoBrowser/i},{name:"chromium",regex:/chromium/i},{name:"chrome",regex:/chrome/i},{name:"safari",regex:/safari/i}].find(r=>r.regex.test(e));return console.log("detectedBrowser: ",r),r?r.name:"unknown"}
+		function deviceType() {
+			var hasTouchScreen = ('ontouchstart' in window ||navigator.maxTouchPoints > 0 ||navigator.msMaxTouchPoints > 0 );
+			var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+			if (hasTouchScreen && (isMobile)) {return 'mobile'; } else {return 'pc'; }
+		}
+		function getParamsFromUrl(a){var query = window.location.search.substring(1);var vars = query.split("&");for(var i=0;i<vars.length;i++) {var pair = vars[i].split("=");if(pair[0] == a){return pair[1];}}return(false);};
+		function getProtocol(){return window.location.protocol.indexOf('https')>-1?'https:':'http:';}
+		
+		/**
+		 * 显示模态弹窗
+		 * @param {string} title - 弹窗标题
+		 * @param {string} message - 弹窗内容
+		 * @param {Function} onConfirm - 确认按钮回调函数（可选）
+		 * @param {Function} onCancel - 取消按钮回调函数（可选）
+		 * @param {boolean} showButtons - 是否显示按钮，默认为true
+		 */
+		function showModal(title, message, onConfirm, onCancel, showButtons) {
+			// 创建弹窗元素
+			var modal = document.createElement('div');
+			modal.className = 'modal-overlay';
+			
+			var buttonsHtml = '';
+			if (showButtons !== false) {
+				if (onCancel) {
+					// 如果有取消回调，显示两个按钮
+					buttonsHtml = `
+						<button class="modal-btn modal-btn-primary" id="modal-confirm">确定</button>
+						<button class="modal-btn modal-btn-secondary" id="modal-cancel">取消</button>
+					`;
+				} else {
+					// 否则只显示确认按钮
+					buttonsHtml = `
+						<button class="modal-btn modal-btn-primary" id="modal-confirm" style="width:100%;">我知道了</button>
+					`;
+				}
+			}
+			
+			var modalContent = `
+				<div class="modal-content">
+					<div class="modal-title">${title}</div>
+					<div class="modal-message">${message}</div>
+					${showButtons !== false ? '<div class="modal-buttons">' + buttonsHtml + '</div>' : ''}
+				</div>
+			`;
+			
+			modal.innerHTML = modalContent;
+			document.body.appendChild(modal);
+			
+			// 只有当显示按钮时才绑定事件
+			if (showButtons !== false) {
+				// 绑定按钮事件
+				document.getElementById('modal-confirm').addEventListener('click', function() {
+					if (typeof onConfirm === 'function') {
+						onConfirm();
+					}
+					document.body.removeChild(modal);
+				});
+				
+				if (onCancel) {
+					document.getElementById('modal-cancel').addEventListener('click', function() {
+						if (typeof onCancel === 'function') {
+							onCancel();
+						}
+						document.body.removeChild(modal);
+					});
+				}
+			}
+			
+			// 返回modal元素，以便外部可以控制
+			return modal;
+		}
+	</script>
+</head>
+<body>
+	<div class="container">
+		<!-- 加载动画 -->
+		<div class="loader-container" id="loader">
+			<div class="loader"></div>
+			<div class="loader-text">文件加载中...</div>
+		</div>
+		
+		<!-- 文件卡片 -->
+		<div id="file-card" style="display: none;">
+			<!-- 这里将由JavaScript动态填充 -->
+		</div>
+	</div>
+	
+	<script>
+	var file_id = getParamsFromUrl('id') || 'cea85bca96d3c2c0';
+	
+	function get_file(file_id){
+		return new Promise(function(resolve,reject){
+			http_post({url:'https://p.xiexinbao.com/csj_wxkefu_file/item',data:{id:file_id},callback:function(html){
+				resolve(JSON.parse(html));
+			}});
+		});
+	}
+	
+	function kefuTicket(_url){
+		var http={post:function(url,data,callback){var xhr=new XMLHttpRequest();xhr.open("POST",url,true);xhr.onreadystatechange=function(){if(xhr.readyState==4){callback(xhr.responseText)}};if(typeof data=="object"){var arr=new Array();var i=0;for(var attr in data){arr[i]=encodeURIComponent(attr)+"="+encodeURIComponent(data[attr]);i++}data=arr.join("&");xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded")}else{if(data.indexOf("{")>-1&&data.indexOf("{")<2){xhr.setRequestHeader("Content-Type","application/json")}else{xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded")}}xhr.send(data)}};  
+		return new Promise((resolve, reject) => {
+			http.post(getProtocol()+'//www.xiexinbao.com/txb/wxticket',{kfurl:_url},function(_kefu_url){  
+				 if(_kefu_url.indexOf('weixin:')!=-1) {
+					resolve(_kefu_url);
+				 }  else {
+					resolve(_url);
+				 }
+			});
+		});
+	}
+
+	var files = [];
+	
+	async function main_init(){
+		try {
+			var file = await get_file(file_id);
+			files.push(file);
+			
+			// 隐藏加载器
+			document.getElementById('loader').style.display = 'none';
+			
+			// 创建并显示文件卡片
+			const fileCard = document.getElementById('file-card');
+			fileCard.style.display = 'block';
+			
+			// 构建文件卡片内容
+			fileCard.innerHTML = `
+				<div class="file-card">
+					<div class="file-icon">
+						<img src="https://down.xiexinbao.com/cdn/icon/${file.file_type}.png" alt="${file.file_type}文件">
+					</div>
+					<h1 class="file-name">${file.file_name}</h1>
+					<div class="file-info">
+						<p>文件大小：${file.file_size}</p>
+						<p>更新于：${file.cdate}</p>
+					</div>
+					<div class="action-buttons">
+						<button class="btn btn-secondary" id="renameButton" onclick="renameFile('${file.id}', '${file.file_name}')">
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M12 20h9"></path>
+								<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+							</svg>
+							重命名文件
+						</button>
+						
+						<button class="btn btn-primary" id="downloadButton" onclick="downFile('${file.id}')">
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+								<polyline points="7 10 12 15 17 10"></polyline>
+								<line x1="12" y1="15" x2="12" y2="3"></line>
+							</svg>
+							下载文件
+						</button>
+					</div>
+				</div>
+			`;
+			
+			// 处理大文件微信内打开的提示
+			if (file._file_size && file._file_size > 20971520) {
+				if (deviceType() === 'mobile' && getBrowser() === 'wx') {
+					// 获取当前页面URL
+					var currentUrl = window.location.href;
+					
+					// 在微信中，显示提示
+					showModal(
+						"文件过大", 
+						`<div class="step-item">
+							<div class="step-number">1</div>
+							<div>请点击右上角"..."，选择"在浏览器中打开"后下载。</div>
+						</div>
+						<div class="step-item">
+							<div class="step-number">2</div>
+							<div>或复制以下链接，在浏览器中打开：</div>
+							<div class="url-box" onclick="copyToClipboard('${currentUrl}')">${currentUrl}</div>
+							<div class="url-tip">点击上方链接可复制</div>
+							<div class="clearfix">
+								<button class="copy-button" onclick="copyToClipboard('${currentUrl}')">复制链接</button>
+							</div>
+						</div>`, 
+						null,
+						null,
+						false // 不显示按钮
+					);
+					
+					// 禁用下载按钮
+					var downloadButton = document.getElementById('downloadButton');
+					if (downloadButton) {
+						downloadButton.disabled = true;
+						downloadButton.style.backgroundColor = "#999";
+						downloadButton.style.boxShadow = "none";
+						downloadButton.innerHTML = "请在浏览器中打开后下载";
+					}
+				}
+			}
+			
+		} catch (error) {
+			console.error('加载文件信息失败:', error);
+			showModal('错误', '加载文件信息失败，请刷新页面重试。');
+		}
+	}
+	
+	// 启动应用
+	setTimeout(main_init, 200);
+	
+	function formatBytes(bytes, decimals = 2) {
+		if (bytes === 0) return '0 Bytes';
+		const k = 1024;
+		const dm = decimals < 0 ? 0 : decimals;
+		const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+	}
+
+	function _downloadBlobWithProgress(file) {
+		var xhr = new XMLHttpRequest();
+		var file_id = file.id; // Assuming file object has an id property
+
+		var progressModal = document.createElement('div');
+		progressModal.className = 'modal-overlay';
+		progressModal.id = 'download-progress-modal';
+		progressModal.innerHTML = `
+			<div class="modal-content">
+				<div class="modal-title" id="progress-modal-title-${file_id}">文件下载</div>
+				<div class="modal-message" id="progress-modal-message-${file_id}">准备下载...</div>
+				<div style="background-color: #e0e0e0; border-radius: 4px; margin-top: 10px; overflow: hidden;">
+					 <div id="progress-bar-${file_id}" style="width: 0%; height: 20px; background-color: var(--primary-color); border-radius: 4px; text-align: center; color: white; font-size: 12px; line-height:20px; transition: width 0.2s ease;">0%</div>
+				</div>
+				<div class="modal-buttons" style="margin-top: 15px;">
+					<button class="modal-btn modal-btn-secondary" id="cancel-download-btn-${file_id}">取消下载</button>
+				</div>
+			</div>
+		`;
+		document.body.appendChild(progressModal);
+
+		var progressBar = document.getElementById(`progress-bar-${file_id}`);
+		var progressMessage = document.getElementById(`progress-modal-message-${file_id}`);
+		var progressTitle = document.getElementById(`progress-modal-title-${file_id}`);
+		var cancelDownloadBtn = document.getElementById(`cancel-download-btn-${file_id}`);
+
+		cancelDownloadBtn.onclick = function() {
+			xhr.abort();
+		};
+		
+		xhr.open('GET', file.file_url.replace('http://','https://'), true);
+		xhr.responseType = 'blob';
+
+		xhr.onprogress = function(event) {
+			if (event.lengthComputable) {
+				var percentComplete = (event.loaded / event.total) * 100;
+				progressBar.style.width = percentComplete + '%';
+				progressBar.textContent = percentComplete.toFixed(0) + '%';
+				progressMessage.textContent = `下载中... ${formatBytes(event.loaded)} / ${formatBytes(event.total)}`;
+			} else {
+				progressMessage.textContent = `下载中... ${formatBytes(event.loaded)} (总大小未知)`;
+				progressBar.style.width = '100%'; 
+				progressBar.textContent = '';
+				progressBar.style.backgroundColor = '#ccc'; 
+			}
+		};
+
+		xhr.onload = function() {
+			var modalExists = document.getElementById('download-progress-modal');
+			if (modalExists) {
+				if (this.status === 200) {
+					progressTitle.textContent = '下载处理中';
+					progressMessage.textContent = '文件已下载，正在准备保存...';
+					progressBar.style.width = '100%';
+					progressBar.textContent = '100%';
+					progressBar.style.backgroundColor = 'var(--primary-color)';
+					
+					var blob = new Blob([this.response]);
+					var url = URL.createObjectURL(blob);
+					var a = document.createElement('a');
+					a.style.display = 'none';
+					a.href = url;
+					a.download = file.file_name;
+					document.body.appendChild(a);
+					a.click();
+					
+					progressTitle.textContent = '下载完成';
+					progressMessage.textContent = '文件已成功开始下载。';
+					cancelDownloadBtn.textContent = '关闭';
+					cancelDownloadBtn.onclick = function() {
+						var currentModal = document.getElementById('download-progress-modal');
+						if (currentModal) document.body.removeChild(currentModal);
+					};
+					setTimeout(function() {
+						document.body.removeChild(a);
+						window.URL.revokeObjectURL(url);
+					}, 100);
+
+				} else {
+					progressTitle.textContent = '下载失败';
+					progressMessage.textContent = `下载失败: 服务器错误 ${this.status}`;
+					progressBar.style.width = '100%';
+					progressBar.style.backgroundColor = 'red';
+					progressBar.textContent = '错误';
+					cancelDownloadBtn.textContent = '关闭';
+					cancelDownloadBtn.onclick = function() {
+						var currentModal = document.getElementById('download-progress-modal');
+						if (currentModal) document.body.removeChild(currentModal);
+					};
+				}
+			}
+		};
+
+		xhr.onerror = function() {
+			var modalExists = document.getElementById('download-progress-modal');
+			if (modalExists) {
+				progressTitle.textContent = '下载错误';
+				progressMessage.textContent = '下载过程中发生网络错误。';
+				progressBar.style.width = '100%';
+				progressBar.style.backgroundColor = 'red';
+				progressBar.textContent = '错误';
+				cancelDownloadBtn.textContent = '关闭';
+				cancelDownloadBtn.onclick = function() {
+					var currentModal = document.getElementById('download-progress-modal');
+					if (currentModal) document.body.removeChild(currentModal);
+				};
+			}
+		};
+
+		xhr.onabort = function() {
+			var modalExists = document.getElementById('download-progress-modal');
+			if (modalExists) {
+				progressTitle.textContent = '下载已取消';
+				progressMessage.textContent = '文件下载已被用户取消。';
+				progressBar.style.width = '100%';
+				progressBar.textContent = '已取消';
+				progressBar.style.backgroundColor = 'transparent';
+				progressBar.style.color = '#666';
+				cancelDownloadBtn.textContent = '关闭';
+				cancelDownloadBtn.className = 'modal-button secondary';
+				cancelDownloadBtn.onclick = function() {
+					var currentModal = document.getElementById('download-progress-modal');
+					if (currentModal) document.body.removeChild(currentModal);
+				};
+			}
+		};
+		xhr.send();
+	}
+
+	async function downFile(file_id){
+		var file = files.find(item => item.id == file_id);
+		if (!file) {
+			showModal('错误', '未找到文件信息，无法下载。');
+			return;
+		}
+		// pc中，直接打开下载链接
+		if(deviceType() == 'pc') {
+			_downloadBlobWithProgress(file);
+			return;
+		}
+		if(getBrowser()=='wx') {
+			//微信中，直接跳转企业客服下载文件
+			window.location.href = `https://work.weixin.qq.com/kfid/kfc52daa2d86ace149e?enc_scene=ENC6LiW2UuEKpQTa1Kjdx45wsq8ameifZne12QWUizJxAGv&scene_param=${file_id}`;
+		} else {
+			//手机浏览器中
+			_downloadBlobWithProgress(file);
+		}
+	}
+
+	/**
+	 * 重命名文件
+	 * @param {string} file_id - 文件ID
+	 * @param {string} current_name - 当前文件名
+	 */
+	 function renameFile(file_id, current_name) {
+		// 分离文件名和扩展名
+		var fileExt = '';
+		var fileName = current_name;
+		var lastDotIndex = current_name.lastIndexOf('.');
+		
+		if (lastDotIndex > 0) {
+			fileExt = current_name.substring(lastDotIndex); // 包含点号的扩展名
+			fileName = current_name.substring(0, lastDotIndex); // 不包含扩展名的文件名
+		}
+		
+		// 创建输入框模态窗口
+		var modal = document.createElement('div');
+		modal.className = 'modal-overlay';
+		
+		var modalContent = `
+			<div class="modal-content" style="width:80%;max-width:350px;">
+				<div class="modal-title">重命名文件</div>
+				<div style="margin-bottom:5px;">
+					<input type="text" id="new-filename" value="${fileName}" style="width:100%;padding:8px;box-sizing:border-box;border:1px solid #ddd;border-radius:4px;">
+				</div>
+				${fileExt ? `<div style="margin-bottom:15px;color:#999;font-size:12px;">文件类型${fileExt}不可更改</div>` : ''}
+				<div class="modal-buttons">
+					<button class="modal-button primary" id="rename-confirm">确定</button>
+					<button class="modal-button secondary" id="rename-cancel">取消</button>
+				</div>
+			</div>
+		`;
+		
+		modal.innerHTML = modalContent;
+		document.body.appendChild(modal);
+		
+		// 聚焦输入框并选中文件名
+		var input = document.getElementById('new-filename');
+		input.focus();
+		input.select();
+		
+		// 绑定按钮事件
+		document.getElementById('rename-confirm').addEventListener('click', function() {
+			var newFileName = input.value.trim();
+			if (newFileName === '') {
+				// alert('文件名不能为空');
+				showModal('输入错误', '文件名不能为空', null, null, true);
+				return;
+			}
+			
+			// 检查非法字符
+			var illegalCharsRegex = /[\\\\\\/:*?\"<>|]/g; // Regex for \ / : * ? \" < > |
+			if (illegalCharsRegex.test(newFileName)) {
+				showModal('输入错误', '文件名不能包含下列字符：<br>\\ / : * ? \" < > |', null, null, true);
+				return;
+			}
+			
+			// 将新文件名与原扩展名组合
+			var fullNewFileName = newFileName + fileExt;
+			
+			// 调用重命名API
+			http_post({
+				url: 'https://p.xiexinbao.com/csj_wxkefu_file/rename',
+				data: {
+					id: file_id,
+					new_file_name: fullNewFileName
+				},
+				callback: function(response) {
+					var result;
+					try {
+						result = JSON.parse(response);
+					} catch(e) {
+						result = {status: 'error'};
+					}
+					
+					if (result.status === 'ok') {
+						// 更新页面显示的文件名
+						var nameElement = document.querySelector('.file-name');
+						if (nameElement) {
+							nameElement.textContent = fullNewFileName;
+						}
+						
+						// 更新缓存的文件信息
+						var fileIndex = files.findIndex(file => file.id === file_id);
+						if (fileIndex !== -1) {
+							files[fileIndex].file_name = fullNewFileName;
+						}
+						
+						// 更新重命名按钮的onclick属性
+						var renameButton = document.getElementById('renameButton');
+						if (renameButton) {
+							renameButton.setAttribute('onclick', `renameFile('${file_id}', '${fullNewFileName}')`);
+						}
+						
+						showModal('成功', '文件重命名成功！');
+					} else {
+						showModal('失败', result.message || '文件重命名失败，请稍后重试');
+					}
+				}
+			});
+			
+			document.body.removeChild(modal);
+		});
+		
+		document.getElementById('rename-cancel').addEventListener('click', function() {
+			document.body.removeChild(modal);
+		});
+	}
+
+	/**
+	 * 复制文本到剪贴板
+	 * @param {string} text - 要复制的文本
+	 */
+	function copyToClipboard(text) {
+		// 创建临时textarea元素
+		var textArea = document.createElement("textarea");
+		textArea.value = text;
+		textArea.style.position = "fixed";  // 避免滚动到底部
+		document.body.appendChild(textArea);
+		textArea.focus();
+		textArea.select();
+		
+		try {
+			// 执行复制命令
+			var successful = document.execCommand('copy');
+			var msg = successful ? '成功复制到剪贴板' : '复制失败';
+			showModal('提示', msg);
+		} catch (err) {
+			showModal('错误', '复制失败: ' + err);
+		}
+		
+		// 移除临时元素
+		document.body.removeChild(textArea);
+	}
+	</script>
+</body>
+</html>
