@@ -450,14 +450,14 @@
                         // 手机号已绑定或不需要绑定，直接跳转下载页面
                         popToast({title: "支付成功！正在为您跳转下载...", icon:"success", timeout: 2000});
                         setTimeout(() => {
-                            window.location.href = '/zww/file_item.html?id=' + order_id;
+                            window.location.href = '/zww/zip_item.html?id=' + order_id;
                         }, 2000);
                     }
                 } else {
                     // 会员信息获取失败或无效，可能需要等待后端更新，直接跳转试试
                     popToast({title: "支付成功！正在为您跳转下载...", icon:"success", timeout: 2000});
                     setTimeout(() => {
-                        window.location.href = '/zww/file_item.html?id=' + order_id;
+                        window.location.href = '/zww/zip_item.html?id=' + order_id;
                     }, 3000); // 稍微延长等待时间，让后端更新
                 }
             } else {
@@ -986,7 +986,7 @@
         async function download_file(){
             // 场景1: 如果有 data_out 则直接下载，这种可能是已经付费了再次下载
             if(order.data_out.startsWith('http')) {
-                window.location.href = '/zww/file_item.html?id='+order_id;
+                window.location.href = '/zww/zip_item.html?id='+order_id;
                 return;
             }
             
@@ -1060,7 +1060,7 @@
                 
                 if(validate_result.data_out && validate_result.data_out.startsWith('http')) {
                     console.log('文件获取成功');
-                    window.location.href = '/zww/file_item.html?id='+order_id;
+                    window.location.href = '/zww/zip_item.html?id='+order_id;
                     return;
                 } else {
                     alert('文件获取失败，请重试或联系客服');

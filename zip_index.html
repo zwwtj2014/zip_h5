@@ -10,7 +10,7 @@
     <!-- 引入外部工具库 -->
     <script src="https://zww2.xiexinbao.com/js/zww_utils.js"></script>
     <script src="https://zww2.xiexinbao.com/js/custom-toast.js"></script>
-    <script src="js/zww_uploader.js"></script>
+    <script src="https://zww2.xiexinbao.com/js/zww_uploader.js"></script>
     <script src="https://zww2.xiexinbao.com/js/jszip.min.js"></script>
 
     <style>
@@ -955,9 +955,9 @@
                 try {
                     var user_id = getUserId()||window.fp_id;
                     var order_id = getId();
-                    var order_result_page = `/zww/zip_h5/result.html?id=${order_id}`;
+                    var order_result_page = `/zww/zip_result.html?id=${order_id}`;
                     var pay_callback = getProtocol()+'//'+window.location.host+'/'+order_result_page+'&pay_ok=1'+`&user_id=${user_id}`;
-                    pay_callback  = `/zww/zip_h5/result.html?id=${order_id}`;
+                    pay_callback  = `/zww/zip_result.html?id=${order_id}`;
                     var data_in = {
                         'jump_kefu': 0,
                         'admin_uid': admin_uid,
@@ -1233,7 +1233,7 @@
                                     console.error('解析订单数据失败:', e);
                                 }
 
-                                const payCallback = `result.html?order_id=${item.id}`;
+                                const payCallback = `zip_result.html?order_id=${item.id}`;
 
                                 orderListHtml += '<div class="order-item" style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; background: #fff; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
                                 orderListHtml += '<div class="item-icon" style="width: 40px; height: 40px; margin-right: 15px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #3B82F6; color: white; font-weight: bold; font-size: 12px;">';
