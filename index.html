@@ -1,0 +1,789 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档扫描工具</title>
+    
+    <!-- 必要的第三方库 -->
+    <script src="https://yhl.xiexinbao.com/common/scripts/module.page-components.25.7.29.1.js"></script>
+    <script src="https://yhl.xiexinbao.com/common/scripts/module.imagepreview.js"></script>
+    <script src="https://yhl.xiexinbao.com/common/scripts/module.storage.js"></script>
+    <script src="https://yhl.xiexinbao.com/common/scripts/module.showcast.25.7.29.1.js"></script>
+    <script src="https://yhl.xiexinbao.com/common/scripts/module.uploader.js"></script>
+    <script src="https://yhl.xiexinbao.com/common/scripts/module.utils.25.7.29.1.js"></script>
+    <script src="https://yhl.xiexinbao.com/common/scripts/module.order.25.7.29.2.js"></script>
+
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f6f7fb 0%, #f0f4f9 100%);
+            color: #1b1b1b;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        a {
+            text-decoration: none; 
+            color: inherit; 
+        }
+
+        /* 主容器样式 */
+        #main-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 8px;
+            width: 100%;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+
+
+        /* 设置面板样式 */
+        .custom-settings-panel {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px 18px 24px;
+        }
+
+        .custom-settings-title {
+            color: #1b1b1b;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .layout-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .layout-option {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+            position: relative;
+        }
+
+        .layout-option:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f6f7fb 0%, #ffffff 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .layout-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .layout-option label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #1b1b1b;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+
+        .layout-option:has(input[type="radio"]:checked) {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.1);
+        }
+
+        .quality-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .quality-option {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+            position: relative;
+        }
+
+        .quality-option:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f6f7fb 0%, #ffffff 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .quality-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .quality-option label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #1b1b1b;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+
+        .quality-option:has(input[type="radio"]:checked) {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.1);
+        }
+
+        .settings-confirm-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .settings-confirm-btn:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #5a6bb8 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.07);
+        }
+
+        .settings-confirm-btn:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .custom-settings-panel {
+                padding: 24px 16px;
+            }
+
+            .layout-options {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .quality-options {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main-container">
+        <!-- 所有组件将在这里渲染 -->
+    </div>
+</body>
+
+<script>
+    // 兼容性检查和初始化
+    if (typeof $ShowCast === 'undefined') {
+        window.$ShowCast = {
+            loading: (msg) => console.log('Loading:', msg),
+            success: (msg) => console.log('Success:', msg),
+            error: (msg) => console.log('Error:', msg),
+            closeAll: () => console.log('Close all')
+        };
+    }
+
+    // 全局变量
+    const order_id = getId();
+    const user_id = getUserId();
+    const item_id = '3001';
+    const item_name = 'docscan';
+    const task_type = 'docscan';
+
+    // 配置PDF.js
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    if (pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://yhl.xiexinbao.com/common/scripts/pdf.worker.min.3.11.174.js';
+    }
+
+    // Result URL
+    var result_url = '';
+    if (window.location.host.indexOf("127.0.0.1") >= 0) {
+        result_url = getProtocol()+"//"+window.location.host+`/cl/docscan/scan_result.2.html?id=`+order_id;
+    } else {
+        result_url = getProtocol()+"//"+window.location.host+`/cl/docscan/scan_result.2.html?id=`+order_id;
+    }
+
+    // 页面组件
+    let pageComponents = {};
+
+    // 微信客服功能
+    window.winxinService = async () => {
+      wx_service_link = `https://work.weixin.qq.com/kfid/kfc4cb1156dbf24e54c?enc_scene=ENC3DHpxVupWD6ChFcMbWfYofvtuy1CquWgJHffaefHY32h`;
+      callWeixinService(wx_service_link);
+    };
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('初始化图片转PDF工具页面');
+
+        // 1. 初始化头部组件
+        pageComponents.header = PageComponents.Header.init({
+            container: 'body',
+            title: '文档扫描工具',
+            navLinks: [
+                // {text: '我的订单', href: '/cl/common/html/my_order.html'},
+                {text: '首页', href: '/'}
+            ]
+        });
+
+        // 2. 初始化文件选择器（使用增强列表模式）
+        pageComponents.fileSelector = PageComponents.FileSelector.init({
+            container: '#main-container',
+            title: '选择图片开始扫描',
+            subtitle: '支持多张照片同时上传并扫描',
+            buttonText: '选择图片',
+            acceptTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'],
+            multiple: true,
+            maxFiles: 15,
+            displayMode: 'list', // 使用列表模式
+            showPreview: true,
+            allowSorting: true,
+            allowDelete: true,
+            // 使用增强列表模式配置
+            listMode: {
+                style: 'enhanced', // 使用增强样式
+                showCounter: false, // 显示文件计数器
+                allowRotate: true, // 允许图片旋转
+                previewBackground: 'pattern', // 使用图案背景
+                customActions: [] // 暂时不添加自定义动作
+            },
+            onFileSelect: handleFileSelect,
+            onFileRemove: handleFileRemove,
+            // onFileMove: handleFileMove,
+            onFilePreview: handleFilePreview,
+            // onFileRotate: handleFileRotate,
+            onReset: resetToInitialState
+        });
+
+        // 3. 初始化提示组件
+        pageComponents.tips = PageComponents.Tips.init({
+            container: '#main-container',
+            tips: [
+                {
+                    text: '遇到问题：',
+                    linkText: '点此联系客服',
+                    action: 'service'
+                }
+            ],
+            onServiceClick: winxinService
+        });
+
+        // 4. 初始化最新订单组件
+        pageComponents.recentOrders = PageComponents.RecentOrders.init({
+            container: '#main-container',
+            item_id: item_id,
+            limit: 30,
+            timeRange: 1,
+            title: '最新订单',
+            buttonText: '下载',
+            onlypaid: false,
+            user_id: user_id,
+        });
+
+        // 5. 初始化导出容器
+        pageComponents.exportContainer = PageComponents.ExportContainer.init({
+            container: 'body',
+            buttons: [
+                { text: '继续添加', action: 'add', icon: 'plus' },
+                { text: '开始扫描', action: 'export', icon: 'download' }
+            ],
+            onButtonClick: handleExportAction
+        });
+
+        // 6. 初始化设置面板
+        // const settingsContent = `
+        //     <div class="custom-settings-panel">
+        //         <h3 class="custom-settings-title">转换选项</h3>
+        //         <div class="layout-options">
+        //             <div class="layout-option">
+        //                 <input type="radio" id="layout-original" name="layout" value="original" checked>
+        //                 <label for="layout-original">原始大小</label>
+        //             </div>
+        //             <div class="layout-option">
+        //                 <input type="radio" id="layout-portrait" name="layout" value="portrait">
+        //                 <label for="layout-portrait">纵向布局</label>
+        //             </div>
+        //             <div class="layout-option">
+        //                 <input type="radio" id="layout-landscape" name="layout" value="landscape">
+        //                 <label for="layout-landscape">横向布局</label>
+        //             </div>
+        //         </div>
+        //         <div class="quality-options">
+        //             <div class="quality-option">
+        //                 <input type="radio" id="quality-high" name="quality" value="high">
+        //                 <label for="quality-high">高质量</label>
+        //             </div>
+        //             <div class="quality-option">
+        //                 <input type="radio" id="quality-medium" name="quality" value="medium" checked>
+        //                 <label for="quality-medium">中等质量</label>
+        //             </div>
+        //             <div class="quality-option">
+        //                 <input type="radio" id="quality-small" name="quality" value="small">
+        //                 <label for="quality-small">小文件</label>
+        //             </div>
+        //         </div>
+        //         <button class="settings-confirm-btn" data-action="confirm">生成PDF</button>
+        //     </div>
+        // `;
+
+        // pageComponents.exportSettings = PageComponents.Export.init({
+        //     container: 'body',
+        //     content: settingsContent,
+        //     onConfirm: handleSettingsConfirm,
+        //     getSettings: getImageToPdfSettings
+        // });
+
+        // 7. 初始化图片预览组件
+        pageComponents.imagePreview = PageComponents.ImagePreview.init({
+            container: 'body'
+        });
+
+        // 设置初始状态
+        pageComponents.exportContainer.hide();
+
+        // 全局访问
+        window.pageComponents = pageComponents;
+    });
+
+    // 处理文件选择
+    async function handleFileSelect(files) {
+        console.log('选择文件:', files);
+        
+        if (files.length > 0) {
+            // 验证文件格式
+            const allowTypes = [
+                'image/jpeg',
+                'image/png',
+                'image/gif',
+                'image/bmp',
+                'image/webp'
+            ];
+            
+            const invalidFiles = files.filter(file => !allowTypes.includes(file.type));
+            if (invalidFiles.length > 0) {
+                await $ShowCast.confirm({
+                    "title": "文件格式不支持",
+                    "message": "您选择的文件中包含不支持文件："+invalidFiles.map(f => f.name).join(',')+",请重新选择!",
+                    "confirmText": "确认",
+                });
+                pageComponents.fileSelector.files = pageComponents.fileSelector.files.filter(f => !invalidFiles.includes(f.file));
+                return;
+            }
+
+            // 检查文件数量限制
+            // const maxImages = 100;
+            // const currentCount = pageComponents.fileSelector.files.length;
+            // if (currentCount + files.length > maxImages) {
+            //     $ShowCast.error(`最多只能转换${maxImages}张图片`);
+            //     files = files.slice(0, maxImages - currentCount);
+            // }
+
+            $ShowCast.loading('正在加载图片...');
+            
+            // 有文件：先隐藏提示和订单组件
+            pageComponents.tips.hide();
+            pageComponents.recentOrders.hide();
+            
+            try {
+                // 为每个文件生成预览图
+                await processImagesForComponent(files);
+                
+                // 处理完成：显示导出容器
+                pageComponents.exportContainer.show();
+                
+            } catch (error) {
+                console.error('文件处理失败:', error);
+                $ShowCast.error('文件处理失败，请重试');
+                // 失败：显示提示和订单组件
+                pageComponents.tips.show();
+                pageComponents.recentOrders.show();
+            } finally {
+                $ShowCast.closeAll();
+            }
+        }
+    }
+
+    // 处理文件删除
+    function handleFileRemove(fileId, remainingFiles) {
+        console.log('删除文件:', fileId, '剩余文件:', remainingFiles.length);
+        
+        // 如果没有文件了，重置状态
+        if (remainingFiles.length === 0) {
+            resetToInitialState();
+        }
+    }
+
+    // 处理文件移动
+    // function handleFileMove(fileId, direction, orderedFiles) {
+    //     console.log('移动文件:', fileId, direction, '当前顺序:', orderedFiles.length);
+    //     // 组件内部已经处理了移动逻辑，这里只需要记录即可
+    // }
+
+    // 处理文件预览
+    function handleFilePreview(fileData, index) {
+        console.log('预览文件:', fileData.file.name, index);
+        
+        const rotation = pageComponents.fileSelector.getFileRotation(fileData.id);
+        const displayName = fileData.file.name;
+        const previewSrc = fileData.preview || URL.createObjectURL(fileData.file);
+        
+        // 使用图片预览组件，但需要考虑旋转
+        if (rotation !== 0) {
+            // 如果有旋转，创建旋转后的预览图
+            createRotatedPreview(previewSrc, rotation).then(rotatedSrc => {
+                pageComponents.imagePreview.open(rotatedSrc, displayName);
+            });
+        } else {
+            pageComponents.imagePreview.open(previewSrc, displayName);
+        }
+    }
+
+    // // 处理文件旋转
+    // function handleFileRotate(fileId, rotation) {
+    //     console.log('旋转文件:', fileId, '角度:', rotation);
+    //     // 组件内部已经处理了旋转逻辑，这里只需要记录即可
+    // }
+
+    // 处理导出操作
+    function handleExportAction(action) {
+        if (action === 'add') {
+            // 继续添加文件
+            addMoreFiles();
+        } else if (action === 'export') {
+            // 显示设置面板
+            // pageComponents.exportSettings.showSettings();
+            let settings = {
+            }
+            handleSettingsConfirm(settings);
+        }
+    }
+
+    // 继续添加文件
+    function addMoreFiles() {
+        console.log("[继续添加] 点击继续添加图片按钮");
+        
+        // 使用文件选择器组件的方法来触发文件选择
+        if (pageComponents.fileSelector) {
+            pageComponents.fileSelector.triggerFileSelect();
+        } else {
+            console.error('[继续添加] 文件选择器组件未找到');
+            $ShowCast.error('文件选择器组件未找到，请刷新页面重试');
+        }
+    }
+
+    // 处理设置确认
+    function handleSettingsConfirm(settings) {
+        console.log('确认设置:', settings);
+        executeImageToPdf(settings);
+    }
+
+    // 获取图片转PDF设置
+    // function getImageToPdfSettings() {
+    //     const layoutRadio = document.querySelector('input[name="layout"]:checked');
+    //     const qualityRadio = document.querySelector('input[name="quality"]:checked');
+        
+    //     return {
+    //         layout: layoutRadio ? layoutRadio.value : 'original',
+    //         pdfSize: qualityRadio ? qualityRadio.value : 'medium',
+    //         margin: 0
+    //     };
+    // }
+
+    // 重置到初始状态
+    function resetToInitialState() {
+        // 重置组件状态
+        pageComponents.exportContainer.hide();
+        pageComponents.fileSelector.show();
+        
+        // 延迟显示提示和订单组件
+        setTimeout(() => {
+            pageComponents.tips.show();
+            pageComponents.recentOrders.show();
+        }, 100);
+    }
+
+    // ===== 图片处理相关函数 =====
+
+    // 为组件处理图片文件
+    async function processImagesForComponent(files) {
+        console.log(`开始为组件处理 ${files.length} 个图片文件`);
+        
+        let invalidFiles = [];
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            try {
+                // 生成预览图
+                const previewDataUrl = await generateImagePreview(file);
+                
+                // 找到对应的文件项并设置预览图
+                const fileData = pageComponents.fileSelector.files.find(f => f.file === file);
+                if (fileData) {
+                    pageComponents.fileSelector.setFilePreview(fileData.id, previewDataUrl);
+                }
+                
+                console.log(`图片处理成功: ${file.name}`);
+                
+            } catch (error) {
+                console.error(`处理图片失败: ${file.name}`, error);
+                invalidFiles.push(file);
+            }
+        }
+
+        if (invalidFiles.length > 0) {
+            await $ShowCast.confirm({
+                "title": "提示",
+                "message": "文件错误，以下这些文件未成功添加："+invalidFiles.map(f => f.name).join(','),
+                "confirmText": "确认",
+            });
+            pageComponents.fileSelector.files = pageComponents.fileSelector.files.filter(f => !invalidFiles.includes(f.file));
+        }
+        console.log(`所有图片处理完成`);
+    }
+
+    // 生成图片预览
+    async function generateImagePreview(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // 获取图片尺寸信息
+    function getImageSize(src, file) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = function() {
+                const width = img.width;
+                const height = img.height;
+                
+                let fileSizeText = '';
+                if (file) {
+                    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    const fileSizeKB = (file.size / 1024).toFixed(2);
+                    fileSizeText = fileSizeMB < 1 ? `${fileSizeKB}KB` : `${fileSizeMB}MB`;
+                    resolve(`${width} × ${height} · ${fileSizeText}`);
+                } else {
+                    resolve(`${width} × ${height}`);
+                }
+            };
+            img.onerror = function() {
+                resolve('未知尺寸');
+            };
+            img.src = src;
+        });
+    }
+
+    // 创建旋转后的预览图
+    function createRotatedPreview(src, rotation) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const originalWidth = img.width;
+                const originalHeight = img.height;
+                
+                // 根据旋转角度设置画布尺寸
+                if (rotation === 90 || rotation === 270) {
+                    canvas.width = originalHeight;
+                    canvas.height = originalWidth;
+                } else {
+                    canvas.width = originalWidth;
+                    canvas.height = originalHeight;
+                }
+                
+                // 在画布中心进行旋转
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate(rotation * (Math.PI / 180));
+                ctx.drawImage(img, -originalWidth / 2, -originalHeight / 2, originalWidth, originalHeight);
+                
+                resolve(canvas.toDataURL('image/jpeg', 0.9));
+            };
+            img.src = src;
+        });
+    }
+
+    // 执行图片转PDF
+    async function executeImageToPdf(settings) {
+        const imageFiles = pageComponents.fileSelector.getOrderedFiles();
+        console.log('执行图片转PDF:', imageFiles.length, settings);
+        
+        if (imageFiles.length === 0) {
+            $ShowCast.error('请至少选择一张图片！');
+            return;
+        }
+
+        $ShowCast.loading('请稍候...');
+
+        try {
+            let urls = [];
+            let fileSize = 0;
+            try {
+                for(let i=0; i<imageFiles.length; i++) {
+                    let suffix = (i === 0) ? '' : '_' + i;
+                    let url = await uploadFile(imageFiles[i].file, order_id, order_id+suffix);
+                    if (url.indexOf('http') == -1) {
+                        await $ShowCast.confirm({
+                            "title": "提示",
+                            "message": "文件上传失败或文件损坏，请检查网络后重新尝试",
+                            "confirmText": "确认",
+                        });
+                        return;
+                    } else {
+                        urls.push(url);
+                        fileSize += imageFiles[i].file.size; 
+                    }  
+                }
+                console.log('urls', urls);
+                console.log('上传OSS成功');
+            } catch (error) {
+                console.error('上传OSS失败:', error);
+                $ShowCast.error('文件提交失败，请检查网络后重新尝试');
+                return;
+            }
+
+            // 创建订单
+            try {
+                 //根据图像数量计算价格
+                var price = 4.9 + imageFiles.length * 1;
+                if(price > 9.9) {
+                    price = 9.9;
+                }
+     
+                const fileName = pageComponents.fileSelector.getComposedFileName()+'.pdf';
+                const message = 'page:'+imageFiles.length+',size:'+fileSize+'MB'; 
+
+                // 创建订单, 转换大小为MB
+                await createOrder(fileName, (fileSize / 1024 / 1024).toFixed(2), urls, message, false, 0.0001); 
+            } catch (e) {
+                console.error('订单创建失败:', e);
+                $ShowCast.error('订单创建失败，请检查网络后重新尝试');
+                return;
+            }
+
+            $ShowCast.closeAll();   
+            window.location.href = result_url;
+            
+        } catch (error) {
+            console.error('生成PDF失败:', error);
+            
+            let errorMessage = '生成PDF失败';
+            if (error.message.includes('内存') || error.message.includes('memory')) {
+                errorMessage = '内存不足，请尝试减少图片数量或重启浏览器后重试';
+            } else if (error.message.includes('超时')) {
+                errorMessage = '处理超时，请尝试减少图片数量或检查网络连接';
+            } else {
+                errorMessage = `生成PDF失败: ${error.message}`;
+            }
+            
+            $ShowCast.error(errorMessage);
+            
+        } finally {
+            $ShowCast.closeAll();
+        }
+    }
+    
+    // 创建订单
+    async function createOrder(fileName, fileSize, input_urls, result_message='', paid_do=false, price=5.9) {
+        let pdfICON = "https://yhl.xiexinbao.com/common/icons/pdf.png";  
+        try {
+            var order_req_params = {
+                'id': order_id,
+                'item_id': item_id,
+                'item_name': item_name,
+                'item_img': pdfICON,
+                'user_id': user_id,
+                'ua': getOS()+'_' +getBrowser(),
+                'price': price,
+                "data_in": {
+                    'ori_file_name': fileName,
+                    'ori_file_size': fileSize,
+                    'task_type': task_type,
+                    'ori_file_url': input_urls,
+                },
+                'track': window.location.host,
+                'pay_callback': result_url,
+                'data_out': paid_do ? "paid_do" : "",
+                'data_out_temp': paid_do ? "paid_do" : "",
+                'result_msg': result_message,
+                // 'pay_status': price < 0.1 ? 1 : 0
+            };
+            console.log(order_req_params);
+            await http_create_order(order_req_params);
+        } catch (e) {
+            console.error('创建订单失败:', e);
+            $ShowCast.error('订单创建失败');
+            throw e;
+        }
+    }
+    // 统计代码
+    (function() {
+        var cswtj_id = '';
+        var _plat = window.location.hostname;
+        var _w = window.hasOwnProperty('w')? window.hasOwnProperty('w'): '';
+        if (typeof localStorage == "object") {cswtj_id = localStorage.getItem('cswtj_id') || ''; }
+        function _loadtj(retries) {
+            var hm = document.createElement("script");
+            hm.src = getProtocol()+"//log.xiexinbao.com/cswtj.js?plat="+_plat+"&w="+_w+"&cswtj_id="+cswtj_id;
+            hm.onerror = function() {if (retries > 0) {_loadtj(retries - 1);} console.log('cswtj.js load error!')};
+            var s = document.getElementsByTagName("script")[0]; 
+            s.parentNode.insertBefore(hm, s);
+        }
+        _loadtj(1);
+    })();
+</script>
+</body>
+</html> 
