@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/D:\\code\\zip_h5/**)",
+      "Read(/D:\\code\\zip_h5/**)",
+      "Read(/D:\\code\\zip_h5/**)",
+      "Read(/D:\\code\\zip_h5/**)",
+      "Read(/D:\\code\\zip_h5/**)",
+      "Read(/D:\\code\\zip_h5/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,703 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件压缩工具</title>
+    
+    <!-- 必要的第三方库 - 从 index.html 复制 -->
+    <script src="https://zww2.xiexinbao.com/js/page-components-0830.js"></script>
+
+    <!-- 原有的压缩相关库 -->
+    <script src="https://zww2.xiexinbao.com/js/zww_utils.js"></script>
+    <script src="https://zww2.xiexinbao.com/js/custom-toast.js"></script>
+    <script src="https://zww2.xiexinbao.com/js/zww_uploader.js"></script>
+    <!-- 使用 zip.js 替代 JSZip (完整版，包含内置 Worker) -->
+    <script src="https://unpkg.com/@zip.js/zip.js@2/dist/zip-full.min.js"></script>
+
+    <style>
+        /* 完全复制 index.html 的样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f6f7fb 0%, #f0f4f9 100%);
+            color: #1b1b1b;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        a {
+            text-decoration: none; 
+            color: inherit; 
+        }
+
+        /* 主容器样式 */
+        #main-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 8px;
+            width: 100%;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main-container">
+        <!-- 所有组件将在这里渲染 -->
+    </div>
+
+    <script src="https://caipiao88.oss-cn-hangzhou.aliyuncs.com/cdn/fp/thumbmark.umd.js"></script>
+    <script>
+        ThumbmarkJS.getFingerprint().then(
+            function (fp) {
+                window.fp_id = fp;
+            }
+        );
+    </script>
+
+<script>
+    // 兼容性检查和初始化
+    if (typeof $ShowCast === 'undefined') {
+        window.$ShowCast = {
+            loading: (msg) => console.log('Loading:', msg),
+            success: (msg) => console.log('Success:', msg),
+            error: (msg) => console.log('Error:', msg),
+            closeAll: () => console.log('Close all')
+        };
+    }
+
+    var popDiv;
+
+    // 全局变量
+    const order_id = getId();
+    const item_id = '4';
+    const item_name = 'zip压缩';
+    const task_type = 'zip';
+
+    // Result URL
+    var result_url = '';
+    if (window.location.host.indexOf("127.0.0.1") >= 0) {
+        result_url = getProtocol()+"//"+window.location.host+`/zww/zip_result.html?id=`+order_id;
+    } else {
+        result_url = getProtocol()+"//"+window.location.host+`/zww/zip_result.html?id=`+order_id;
+    }
+
+    // 页面组件
+    let pageComponents = {};
+
+    // 微信客服功能 - 使用原来 zip_index.html 的逻辑
+    window.callWxkefu = async () => {
+        var user_id = getUserId() || window.fp_id || '';
+        // https://work.weixin.qq.com/kfid/kfc3cef22a5282e26e8?enc_scene=ENCCBodKkRSro2NyHPoCbkVbTZx9c7WbVhpRub6NUjcMwyP
+        var wx_service_link = `https://work.weixin.qq.com/kfid/kfc3cef22a5282e26e8?enc_scene=ENCCBodKkRSro2NyHPoCbkVbTZx9c7WbVhpRub6NUjcMwyP&scene_param=${user_id}`;
+        
+        const isWx = /micromessenger/i.test(navigator.userAgent);
+        if (isWx) {
+            window.location.href = wx_service_link;
+            return;
+        }
+
+        const hasTouchScreen = ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0);
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isMobile = isAndroid || isIOS || /webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        let deviceType = 'pc';
+        if (hasTouchScreen && isMobile) {
+            if (isAndroid) {
+                deviceType = 'android';
+            } else if (isIOS) {
+                deviceType = 'iphone';
+            } else {
+                deviceType = 'android';
+            }
+        }
+
+        if (deviceType === 'pc') {
+            const parsedUrl = new URL(wx_service_link);
+            const kfid = parsedUrl.pathname.split('/')[2];
+            const encScene = parsedUrl.searchParams.get('enc_scene');
+            const sceneParam = parsedUrl.searchParams.get('scene_param');
+            const newUrl = new URL('weixin://jumptokfchat/');
+            newUrl.searchParams.append('kfid', kfid);
+            newUrl.searchParams.append('scene', '50');
+            const extParams = new URLSearchParams();
+            if (encScene) {
+                extParams.append('enc_scene', encScene);
+            }
+            if (sceneParam) {
+                extParams.append('scene_param', sceneParam);
+            }
+            extParams.append('refkey', '');
+            newUrl.searchParams.append('ext_params', extParams.toString());
+            wx_service_link = newUrl.toString();
+        } else {
+            try {
+                const response = await fetch(getProtocol() + '//www.xiexinbao.com/txb/wxticket', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `kfurl=${encodeURIComponent(wx_service_link)}`
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const _kefu_url = await response.text();
+                if (_kefu_url.startsWith('weixin://')) {
+                    wx_service_link = _kefu_url;
+                }
+            } catch (error) {
+                console.error("获取微信客服链接失败:", error);
+            }
+        }
+
+        window.location.href = wx_service_link;
+    };
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('初始化文件压缩工具页面');
+
+        // 1. 初始化头部组件
+        pageComponents.header = PageComponents.Header.init({
+            container: 'body',
+            title: '文件压缩工具',
+            navLinks: [
+                {text: '首页', href: '/'}
+            ]
+        });
+
+        // 2. 修改文件选择器配置，简化配置避免冲突
+        pageComponents.fileSelector = PageComponents.FileSelector.init({
+            container: '#main-container',
+            title: '选择文件开始压缩',
+            subtitle: '支持多种文件格式同时上传并压缩',
+            buttonText: '选择文件',
+            acceptTypes: ['*/*'],
+            multiple: false,
+            maxFiles: 100,
+            displayMode: 'list',
+            showPreview: false, // 改为 true，让库处理预览逻辑
+            allowSorting: false,
+            allowDelete: true,
+            allowRename: true,
+            listMode: {
+                style: 'enhanced',
+                showCounter: false,
+                allowRotate: false,
+                previewBackground: 'pattern',
+                customActions: []
+            },
+            // 简化回调，让库自己处理大部分逻辑
+            onFileSelect: handleFileSelect,
+            onFileRemove: (fileId, remainingFiles) => {
+                console.log('文件删除回调:', fileId, remainingFiles);
+                if (remainingFiles.length === 0) {
+                    resetToInitialState();
+                }
+            },
+            onFilePreview: (fileData, index) => {
+                // 对于非图片文件，显示文件信息
+                console.log('文件预览:', fileData.file?.name);
+                if (fileData.file) {
+                    $ShowCast.success(`文件信息：${fileData.file.name} (${formatFileSize(fileData.file.size)})`);
+                }
+                return false; // 阻止默认预览行为
+            },
+            onReset: resetToInitialState
+        });
+
+        // 3. 初始化提示组件
+        pageComponents.tips = PageComponents.Tips.init({
+            container: '#main-container',
+            tips: [
+                {
+                    text: '遇到问题：',
+                    linkText: '点此联系客服',
+                    action: 'service'
+                }
+            ],
+            onServiceClick: callWxkefu
+        });
+
+        // 4. 初始化最新订单组件（显示历史压缩记录）
+        pageComponents.recentOrders = PageComponents.RecentOrders.init({
+            container: '#main-container',
+            item_id: item_id,
+            limit: 30,
+            timeRange: 1,
+            title: '历史记录',
+            buttonText: '下载',
+            onlypaid: false,
+            user_id: getUserId(),
+        });
+
+        // 5. 初始化导出容器
+        pageComponents.exportContainer = PageComponents.ExportContainer.init({
+            container: 'body',
+            buttons: [
+                { text: '继续添加', action: 'add', icon: 'plus' },
+                { text: '开始压缩', action: 'export', icon: 'download' }
+            ],
+            onButtonClick: handleExportAction
+        });
+
+        // 设置初始状态
+        pageComponents.exportContainer.hide();
+
+        // 全局访问
+        window.pageComponents = pageComponents;
+    });
+
+    // 处理文件选择
+    async function handleFileSelect(files) {
+        console.log('选择文件:', files);
+        
+        if (files.length > 0) {
+            $ShowCast.loading('正在加载...');
+            
+            // 有文件：先隐藏提示和订单组件
+            pageComponents.tips.hide();
+            pageComponents.recentOrders.hide();
+            
+            try {
+                pageComponents.fileSelector.showFiles();
+                
+                // 处理完成：显示导出容器
+                pageComponents.exportContainer.show();
+                
+            } catch (error) {
+                console.error('文件处理失败:', error);
+                $ShowCast.error('文件处理失败，请重试');
+                // 失败：显示提示和订单组件
+                pageComponents.tips.show();
+                pageComponents.recentOrders.show();
+            } finally {
+                $ShowCast.closeAll();
+            }
+        }
+    }
+
+
+    // 处理文件删除
+    function handleFileRemove(fileId, remainingFiles) {
+        console.log('删除文件:', fileId, '剩余文件:', remainingFiles.length);
+        
+        // 如果没有文件了，重置状态
+        if (remainingFiles.length === 0) {
+            resetToInitialState();
+        }
+    }
+
+    // 处理导出操作
+    function handleExportAction(action) {
+        if (action === 'add') {
+            // 继续添加文件
+            addMoreFiles();
+        } else if (action === 'export') {
+            // 开始压缩
+            startCompress();
+        }
+    }
+
+    // 继续添加文件
+    function addMoreFiles() {
+        console.log("[继续添加] 点击继续添加文件按钮");
+        
+        // 使用文件选择器组件的方法来触发文件选择
+        if (pageComponents.fileSelector) {
+            pageComponents.fileSelector.triggerFileSelect();
+        } else {
+            console.error('[继续添加] 文件选择器组件未找到');
+            $ShowCast.error('文件选择器组件未找到，请刷新页面重试');
+        }
+    }
+
+    // 重置到初始状态
+    function resetToInitialState() {
+        console.log('重置到初始状态');
+        
+        // 重置组件状态
+        if (pageComponents.exportContainer) {
+            pageComponents.exportContainer.hide();
+        }
+        
+        // 不要隐藏文件选择器，而是确保它显示
+        if (pageComponents.fileSelector) {
+            // 如果有文件，保持显示；如果没有文件，也要显示选择界面
+            pageComponents.fileSelector.show();
+        }
+        
+        // 延迟显示提示和订单组件
+        setTimeout(() => {
+            if (pageComponents.tips) {
+                pageComponents.tips.show();
+            }
+            if (pageComponents.recentOrders) {
+                pageComponents.recentOrders.show();
+            }
+        }, 100);
+    }
+
+    // 修改后的文件选择处理函数
+    function handleFileSelectAfter(files) {
+        console.log('延迟处理文件选择:', files);
+        
+        if (files && files.length > 0) {
+            // 隐藏提示和订单组件
+            if (pageComponents.tips) {
+                pageComponents.tips.hide();
+            }
+            if (pageComponents.recentOrders) {
+                pageComponents.recentOrders.hide();
+            }
+            
+            // 显示导出容器
+            if (pageComponents.exportContainer) {
+                pageComponents.exportContainer.show();
+            }
+        }
+    }
+
+    // ===== 文件处理相关函数 =====
+
+    // 为组件处理文件
+    async function processFilesForComponent(files) {
+        console.log(`开始为组件处理 ${files.length} 个文件`);
+        // 简化处理，只做基本验证，不干扰库的文件对象
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            console.log(`文件处理: ${file.name} (${formatFileSize(file.size)})`);
+        }
+        console.log('文件处理完成');
+    }
+
+    // 预处理文件名，避免重复
+    function preprocessFileNames(selectedFiles) {
+        const nameMap = new Map();
+        const processedFiles = [];
+        
+        for (const fileData of selectedFiles) {
+            const file = fileData.file;
+            let fileName = file.name;
+            
+            // 处理重名
+            if (nameMap.has(fileName)) {
+                let counter = nameMap.get(fileName) + 1;
+                nameMap.set(fileName, counter);
+                
+                const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+                const ext = fileName.substring(fileName.lastIndexOf('.'));
+                fileName = `${nameWithoutExt}_${counter}${ext}`;
+            } else {
+                nameMap.set(fileName, 1);
+            }
+            
+            processedFiles.push({
+                file: file,
+                processedName: fileName
+            });
+        }
+        
+        return processedFiles;
+    }
+
+    // 开始压缩 - 使用 zip.js 替代 JSZip
+    async function startCompress() {
+        const selectedFiles = pageComponents.fileSelector.files;
+        console.log('获取到的文件列表:', selectedFiles);
+        console.log('文件数量:', selectedFiles.length);
+        
+        if (selectedFiles.length === 0) {
+            $ShowCast.error('请至少选择一个文件！');
+            return;
+        }
+
+        $ShowCast.loading('请稍候...');
+        let progressToast = createCustomProgressToast(0);
+
+        try {
+            console.log('🗃️ 开始压缩:', selectedFiles.length, '个文件');
+
+            // 检查 zip.js 是否加载
+            if (typeof zip === 'undefined') {
+                throw new Error('压缩库未加载，请刷新页面重试');
+            }
+
+            // 配置 zip.js (可选，优化性能)
+            zip.configure({
+                useWebWorkers: true,      // 启用 Worker
+                maxWorkers: 2,            // 限制 Worker 数量
+                terminateWorkerTimeout: 5000  // Worker 空闲 5 秒后终止
+            });
+
+            // 创建 BlobWriter 和 ZipWriter
+            const blobWriter = new zip.BlobWriter("application/zip");
+            const zipWriter = new zip.ZipWriter(blobWriter);
+            
+            // 预处理文件名，避免重复
+            const processedFiles = preprocessFileNames(selectedFiles);
+            
+            // 添加文件到 zip
+            let currentFileIndex = 0;
+            const totalFiles = processedFiles.length;
+            
+            for (const fileData of processedFiles) {
+                const file = fileData.file;
+                const fileName = fileData.processedName || file.name;
+                
+                // 添加单个文件，带进度回调
+                await zipWriter.add(
+                    fileName, 
+                    new zip.BlobReader(file),
+                    {
+                        level: 6,  // 压缩级别 (0-9)
+                        useWebWorkers: true,  // 使用 Worker
+                        onprogress: (progress, total) => {
+                            // 计算总进度
+                            const fileProgress = (currentFileIndex / totalFiles) * 100;
+                            const currentFileProgress = (progress / total) * (100 / totalFiles);
+                            const totalProgress = Math.round(fileProgress + currentFileProgress);
+                            
+                            if (progressToast && typeof progressToast.updateProgress === 'function') {
+                                try {
+                                    progressToast.updateProgress(totalProgress);
+                                } catch (e) {
+                                    console.error('更新进度条失败', e);
+                                }
+                            }
+                            
+                            // 调试输出
+                            if (totalProgress % 10 === 0 || totalProgress === 100) {
+                                console.log(`进度更新: ${totalProgress}%`);
+                            }
+                        }
+                    }
+                );
+                
+                console.log(`📁 已添加文件: ${fileName} (${formatFileSize(file.size)})`);
+                currentFileIndex++;
+                
+                // 小延迟让UI更新
+                await sleep(10);
+            }
+            
+            // 关闭 ZipWriter
+            await zipWriter.close();
+            
+            // 获取压缩后的 blob
+            const zipBlob = await blobWriter.getData();
+            
+            console.log(`✅ 压缩完成，文件大小: ${formatFileSize(zipBlob.size)}`);
+            
+            // 关闭进度显示
+            if (progressToast && typeof progressToast.close === 'function') {
+                progressToast.close();
+            }
+            
+            // 上传文件
+            popDiv = popToast({title:'文件上传中...',icon:'loading'});
+    
+            var file_url = await upload_file({
+                buffer: await zipBlob.arrayBuffer(),
+                length: zipBlob.size
+            });
+            var file_size = zipBlob.size;
+
+            // 创建订单
+            await createCompressOrder(selectedFiles, file_url, file_size);
+
+            popDiv.closeSelf();
+
+            $ShowCast.closeAll();
+            window.location.href = result_url;
+            
+        } catch (error) {
+            console.error('压缩失败:', error);
+            $ShowCast.error('压缩失败：' + (error.message || '未知错误'));
+            
+            // 关闭进度显示
+            if (progressToast && typeof progressToast.close === 'function') {
+                progressToast.close();
+            }
+        } finally {
+            $ShowCast.closeAll();
+        }
+    }
+
+
+    // 创建压缩订单 - 基于原来的逻辑
+    async function createCompressOrder(selectedFiles, file_url, file_size) {
+        try {
+            var user_id = getUserId() || window.fp_id || '';
+            var order_result_page = `/zww/zip_result.html?id=${order_id}`;
+            var pay_callback = order_result_page;
+            var fileSize = (file_size/1024/1024).toFixed(1);
+            var ori_file_size = getTotalSize(selectedFiles);
+            var ori_file_size_mb = (ori_file_size/1024/1024).toFixed(1);
+            
+            var data_in = {
+                'jump_kefu': 0,
+                'admin_uid': admin_uid,
+                'do_id': 4,
+                'item_id': 4,
+                'item_name': 'zip压缩',
+                'task_type': 'zip',
+                'file_size': fileSize,
+                'ori_file_size': ori_file_size_mb,
+                'ori_file_url': '',
+                'ori_file_name': `${(order_id || Date.now())+'_'+selectedFiles.length}.zip`,
+            };
+                
+            const order_req_params = {
+                'id': order_id,
+                'item_id': 4,
+                'item_name': 'zip压缩',
+                'item_img': 'https://zww2.xiexinbao.com/icons/zip.png',
+                'user_id': user_id,
+                'fp_id': window.fp_id||'',
+                'ua': getOS()+'_' +getBrowser(),
+                'price': 4.9,
+                'generate_status': 0,
+                'tag': 'zip',
+                "data_in": data_in,
+                'data_out': '',
+                'data_out_temp': file_url,
+                'generate_status': parseInt(Date.now()/ 1000),
+                'result_msg': navigator?.userAgent?.toLowerCase(),
+                'track': window.location.host,
+                'pay_callback': pay_callback,
+                'overtime': 0
+            };
+
+            var order_status = await http_create_order(order_req_params);
+            console.log('order_status', order_status);
+
+            var ori_file_name = data_in.ori_file_name;
+            await add_wxfile({
+                id: order_id, 
+                ua: getOS()+'_' +getBrowser(),
+                file_url: file_url, 
+                file_size: file_size, 
+                file_type: 'zip', 
+                file_name: ori_file_name, 
+                "uid":"zww", 
+                "media_id_otime":0,
+                "media_id":""
+            });
+            
+        } catch (error) {
+            console.log('⚠️ 订单创建错误:', error.message);
+            throw error;
+        }
+    }
+
+    // 工具函数
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function getTotalSize(selectedFiles) {
+        return selectedFiles.reduce((sum, fileData) => sum + fileData.file.size, 0);
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    }
+
+    // 全局变量初始化
+    var admin_uid = getParamsFromUrl('admin_uid') || localStorage.getItem('admin_uid') || '';
+    localStorage.setItem('admin_uid', admin_uid);
+
+</script>
+
+<!-- 原有的工具函数 -->
+<script>
+    function http_create_order(reqParams){
+      return new Promise((resolve, reject) => {
+          http_post({url:getProtocol()+'//p.xiexinbao.com/zww_order/add',data:reqParams,callback:function(result){
+              resultObject = JSON.parse(result); 
+              resolve(resultObject.status);
+          }})
+      });
+    };
+
+    function add_wxfile(reqParams){
+        return new Promise((resolve, reject) => {
+            http_post({url:getProtocol()+'//p.xiexinbao.com/csj_wxkefu_file/add_or_set',data:reqParams,callback:function(result){
+                resolve();
+            }})
+        });
+    };
+
+    async function upload_file(zip_data) {
+        var file_obj = {
+            data: zip_data.buffer,
+            size: zip_data.length,
+            mime: "application/octet-stream",
+            suffix: ".zip",
+            name: zip_data.name || "output.zip",
+        }
+        var file_url = await $uploader.uploadFile(Object.assign(file_obj, {filename:`/zww/ori_file/zip/${order_id}/${Date.now()}${file_obj.suffix}`}));
+        if(file_url && file_url.indexOf('http')>-1) {
+            return new Promise(function(resolve,reject){
+                resolve(file_url);
+            });
+        } else {
+            file_obj.retry = true;
+            return await upload_file_bak(file_obj);
+        };
+    }
+</script>
+
+<!-- 统计脚本 -->
+<script>
+    (function () {
+        var cswtj_id = '';
+        var _plat = window.location.hostname;
+        var _w = 'zip_index.html';
+        if (typeof localStorage == "object") {
+            cswtj_id = localStorage.getItem('cswtj_id') || '';
+        }
+        function _loadtj(retries) {
+            var hm = document.createElement("script");
+            hm.src = getProtocol() + "//log.xiexinbao.com/cswtj.js?plat=" + _plat + "&w=" + _w + "&cswtj_id=" + cswtj_id;
+            hm.onload = function () { };
+            hm.onerror = function () {
+                if (retries > 0) {
+                    _loadtj(retries - 1);
+                }
+                console.log('cswtj.js load error!')
+            };
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        }
+        _loadtj(1);
+    })();
+</script>
+</body>
+</html>

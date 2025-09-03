@@ -317,7 +317,7 @@
             var file_size = data_in['file_size'];
             var ori_file_name = data_in['ori_file_name'];
             ori_file_name = ori_file_name.substring(0, ori_file_name.lastIndexOf('.'));
-            document.querySelector('.content-name').innerHTML='文件名: ' + ori_file_name + '.mp3';
+            document.querySelector('.content-name').innerHTML='文件名: ' + ori_file_name + '.zip';
             document.querySelector('.content-size').innerHTML='文件大小: ' + (file_size/1024/1024).toFixed(2) + 'MB';
         }
     
@@ -469,6 +469,7 @@
                     }, 3000);
                 }
             }
+            this.download_file();
         }
         setTimeout(main,200);
         
@@ -984,89 +985,100 @@
         }
     
         async function download_file(){
+            // 场景0: 本地允许直接访问
+            if(window.location.href.indexOf('127.0.0.1')>0) {
+                window.location.href = '/zww/zip_item.html?id='+order_id;
+                return;
+            }
             // 场景1: 如果有 data_out 则直接下载，这种可能是已经付费了再次下载
             if(order.data_out.startsWith('http')) {
                 window.location.href = '/zww/zip_item.html?id='+order_id;
                 return;
             }
-            
-            // 场景2: 检查 data_out_temp 是否存在, 不存在则提示转换出错
-            if(!order.data_out_temp.startsWith('http')) {
-                alert('转换出错了，请重试或联系客服');
-                window.location.href = '/';
+
+            // 场景2: 如果有 data_out_temp 放通，先不收费
+            if(order.data_out_temp.startsWith('http')) {
+                window.location.href = '/zww/zip_item.html?id='+order_id;
                 return;
             }
             
-            // 获取会员信息
-            let memberInfo = null;
-            if (order.user_id && order.user_id !== 'no_user_id') {
-                memberInfo = await get_member_info(order.user_id, 'zip');
-            }
+            // // 场景2: 检查 data_out_temp 是否存在, 不存在则提示转换出错
+            // if(!order.data_out_temp.startsWith('http')) {
+            //     alert('转换出错了，请重试或联系客服');
+            //     window.location.href = '/';
+            //     return;
+            // }
             
-            // 场景3: 无法获取会员信息 - 显示支付弹窗
-            if(!memberInfo || memberInfo.reason === "not_found_by_userid" || memberInfo.reason === "not_found" || memberInfo.reason === "bad_request"){
-                console.log('无会员信息，需要开通会员');
-                popToast({title: "需要开通会员才能下载文件。", icon:'info', timeout:3000});
+            // // 获取会员信息
+            // let memberInfo = null;
+            // if (order.user_id && order.user_id !== 'no_user_id') {
+            //     memberInfo = await get_member_info(order.user_id, 'zip');
+            // }
+            
+            // // 场景3: 无法获取会员信息 - 显示支付弹窗
+            // if(!memberInfo || memberInfo.reason === "not_found_by_userid" || memberInfo.reason === "not_found" || memberInfo.reason === "bad_request"){
+            //     console.log('无会员信息，需要开通会员');
+            //     popToast({title: "需要开通会员才能下载文件。", icon:'info', timeout:3000});
                 
-                if (paymentDialog) {
-                    paymentDialog.show();
-                } else {
-                    initPaymentDialog();
-                    paymentDialog.show();
-                }
-                return;
-            }
+            //     if (paymentDialog) {
+            //         paymentDialog.show();
+            //     } else {
+            //         initPaymentDialog();
+            //         paymentDialog.show();
+            //     }
+            //     return;
+            // }
             
-            // 场景4: 会员过期 - 显示续费弹窗
-            if (memberInfo.reason === 'expired_time' || (memberInfo.msg && memberInfo.msg.includes('过期'))) {
-                show_member_expired_modal(memberInfo);
-                return;
-            }
+            // // 场景4: 会员过期 - 显示续费弹窗
+            // if (memberInfo.reason === 'expired_time' || (memberInfo.msg && memberInfo.msg.includes('过期'))) {
+            //     show_member_expired_modal(memberInfo);
+            //     return;
+            // }
             
-            // 场景5: 会员次数不足 - 显示续费弹窗
-            if (memberInfo.reason === 'expired_num') {
-                popToast({title: "会员剩余次数不足，请续费。", icon:'info', timeout:3000});
-                show_member_expired_modal(memberInfo);
-                return;
-            }
+            // // 场景5: 会员次数不足 - 显示续费弹窗
+            // if (memberInfo.reason === 'expired_num') {
+            //     popToast({title: "会员剩余次数不足，请续费。", icon:'info', timeout:3000});
+            //     show_member_expired_modal(memberInfo);
+            //     return;
+            // }
             
-            // 场景6: 其他会员无效情况 - 显示支付弹窗
-            if (memberInfo.valid === false) {
-                if (memberInfo.msg) {
-                    popToast({title: memberInfo.msg, icon:'info', timeout:3000});
-                } else {
-                    popToast({title: "会员状态异常，请重新开通。", icon:'info', timeout:3000});
-                }
+            // // 场景6: 其他会员无效情况 - 显示支付弹窗
+            // if (memberInfo.valid === false) {
+            //     if (memberInfo.msg) {
+            //         popToast({title: memberInfo.msg, icon:'info', timeout:3000});
+            //     } else {
+            //         popToast({title: "会员状态异常，请重新开通。", icon:'info', timeout:3000});
+            //     }
                 
-                if (paymentDialog) {
-                    paymentDialog.show();
-                } else {
-                    initPaymentDialog();
-                    paymentDialog.show();
-                }
-                return;
-            }
+            //     if (paymentDialog) {
+            //         paymentDialog.show();
+            //     } else {
+            //         initPaymentDialog();
+            //         paymentDialog.show();
+            //     }
+            //     return;
+            // }
             
-            // 场景7: 会员有效但手机号未绑定 - 提示绑定手机号
-            if (memberInfo.valid === true && memberInfo.member_info && memberInfo.member_info.is_phone_bound !== true) {
-                prompt_bind_phone(order.user_id, 'zip', false);
-                popToast({title: "请先绑定手机号以继续下载。", icon:'info', timeout:3000});
-                return;
-            }
+            // // 场景7: 会员有效但手机号未绑定 - 提示绑定手机号
+            // if (memberInfo.valid === true && memberInfo.member_info && memberInfo.member_info.is_phone_bound !== true) {
+            //     prompt_bind_phone(order.user_id, 'zip', false);
+            //     popToast({title: "请先绑定手机号以继续下载。", icon:'info', timeout:3000});
+            //     return;
+            // }
             
-            // 场景8: 会员有效且手机号已绑定 - 生成文件并下载
-            if (memberInfo.valid === true && memberInfo.member_info && memberInfo.member_info.is_phone_bound === true) {
-                var validate_result = await generate_mp3({'order_id':order_id,user_id:order.user_id,item_id:'zip',track:window.location.hostname});
+            // // 场景8: 会员有效且手机号已绑定 - 生成文件并下载
+            // if (memberInfo.valid === true && memberInfo.member_info && memberInfo.member_info.is_phone_bound === true) {
+            //     var validate_result = await generate_mp3({'order_id':order_id,user_id:order.user_id,item_id:'zip',track:window.location.hostname});
                 
-                if(validate_result.data_out && validate_result.data_out.startsWith('http')) {
-                    console.log('文件获取成功');
-                    window.location.href = '/zww/zip_item.html?id='+order_id;
-                    return;
-                } else {
-                    alert('文件获取失败，请重试或联系客服');
-                    return;
-                }
-            }
+            //     if(validate_result.data_out && validate_result.data_out.startsWith('http')) {
+            //         console.log('文件获取成功');
+            //         window.location.href = '/zww/zip_item.html?id='+order_id;
+            //         return;
+            //     } else {
+            //         alert('文件获取失败，请重试或联系客服');
+            //         return;
+            //     }
+            // }
             
             // 兜底处理：如果所有条件都不满足，显示错误提示
             console.error('未处理的会员状态:', memberInfo);

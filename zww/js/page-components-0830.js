@@ -65,7 +65,6 @@ PageComponents.Header = class extends BaseComponent {
             container: 'body',
             title: '文件处理工具',
             navLinks: [
-                {text: '我的订单', href: '/cl/common/html/my_order.html'},
                 {text: '首页', href: '/'}
             ],
             onNavClick: null
@@ -180,6 +179,7 @@ PageComponents.FileSelector = class extends BaseComponent {
             showPreview: true,
             allowSorting: false,
             allowDelete: true,
+            allowRename: false, // 新增：是否允许重命名
             maxFiles: Infinity, // 新增：最大文件数量限制
             // 新增：列表模式增强配置
             listMode: {
@@ -406,6 +406,103 @@ PageComponents.FileSelector = class extends BaseComponent {
             }
             
             .file-item-${this.componentId} .delete-btn:active {
+                transform: translateY(0);
+            }
+            
+            /* 重命名按钮样式 */
+            .file-item-${this.componentId} .rename-btn {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 16px;
+                padding: 8px 24px;
+                font-size: 0.9rem;
+                font-weight: 500;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                margin-right: 8px;
+            }
+            
+            .file-item-${this.componentId} .rename-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+                background: linear-gradient(135deg, #5a6fd8 0%, #6a4590 100%);
+            }
+            
+            .file-item-${this.componentId} .rename-btn:active {
+                transform: translateY(0);
+            }
+            
+            /* 重命名输入框样式 */
+            .file-item-${this.componentId} .rename-input {
+                width: 100%;
+                padding: 8px 12px;
+                border: 2px solid #667eea;
+                border-radius: 8px;
+                font-size: 1rem;
+                margin-bottom: 12px;
+                display: none;
+            }
+            
+            .file-item-${this.componentId} .rename-input.active {
+                display: block;
+            }
+            
+            .file-item-${this.componentId} .rename-actions {
+                display: none;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            
+            .file-item-${this.componentId} .rename-actions.active {
+                display: flex;
+            }
+            
+            .file-item-${this.componentId} .rename-confirm,
+            .file-item-${this.componentId} .rename-cancel {
+                padding: 8px 20px;
+                border-radius: 16px;
+                border: none;
+                font-size: 0.85rem;
+                font-weight: 500;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            
+            .file-item-${this.componentId} .rename-confirm {
+                background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+                color: white;
+            }
+            
+            .file-item-${this.componentId} .rename-confirm:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+                background: linear-gradient(135deg, #45a049 0%, #388e3c 100%);
+            }
+            
+            .file-item-${this.componentId} .rename-confirm:active {
+                transform: translateY(0);
+            }
+            
+            .file-item-${this.componentId} .rename-cancel {
+                background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+                color: #666;
+            }
+            
+            .file-item-${this.componentId} .rename-cancel:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+            }
+            
+            .file-item-${this.componentId} .rename-cancel:active {
                 transform: translateY(0);
             }
 
@@ -646,6 +743,73 @@ PageComponents.FileSelector = class extends BaseComponent {
                 background: rgba(255, 71, 87, 1);
                 transform: scale(1.1);
             }
+            
+            /* 列表模式重命名样式 */
+            .file-list-item-${this.componentId} .rename-input-list {
+                width: 100%;
+                padding: 6px 10px;
+                border: 2px solid #667eea;
+                border-radius: 6px;
+                font-size: 0.9rem;
+                margin-bottom: 8px;
+                display: none;
+            }
+            
+            .file-list-item-${this.componentId} .rename-input-list.active {
+                display: block;
+            }
+            
+            .file-list-item-${this.componentId} .rename-actions-list {
+                display: none;
+                gap: 6px;
+                margin-bottom: 8px;
+            }
+            
+            .file-list-item-${this.componentId} .rename-actions-list.active {
+                display: flex;
+            }
+            
+            /* 列表模式确认取消按钮样式 - 与action-btn保持一致 */
+            .file-list-item-${this.componentId} .rename-confirm,
+            .file-list-item-${this.componentId} .rename-cancel {
+                padding: 3px 8px;
+                border: none;
+                border-radius: 6px;
+                font-size: 0.85rem;
+                color: #4f4f4f;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: inline-flex;
+                align-items: center;
+                gap: 2px;
+            }
+            
+            .file-list-item-${this.componentId} .rename-confirm {
+                background-color: #4caf50;
+                color: white;
+            }
+            
+            .file-list-item-${this.componentId} .rename-confirm:hover {
+                background-color: #45a049;
+                transform: translateY(-1px);
+            }
+            
+            .file-list-item-${this.componentId} .rename-confirm:active {
+                transform: translateY(0);
+            }
+            
+            .file-list-item-${this.componentId} .rename-cancel {
+                background-color: rgba(0,0,0,0.04);
+                color: #666;
+            }
+            
+            .file-list-item-${this.componentId} .rename-cancel:hover {
+                background-color: rgba(0,0,0,0.08);
+            }
+            
+            .file-list-item-${this.componentId} .rename-cancel:active {
+                background-color: rgba(0,0,0,0.12);
+            }
 
             /* 移动端适配 */
             @media screen and (max-width: 767px) {
@@ -700,6 +864,12 @@ PageComponents.FileSelector = class extends BaseComponent {
                     height: 14px;
                 }
                 
+                .file-list-item-${this.componentId} .rename-confirm,
+                .file-list-item-${this.componentId} .rename-cancel {
+                    padding: 2px 6px;
+                    font-size: 0.8rem;
+                }
+                
                 .file-list-item-${this.componentId} .file-number {
                     width: 24px;
                     height: 24px;
@@ -738,6 +908,7 @@ PageComponents.FileSelector = class extends BaseComponent {
         
         this.bindEvents();
         this.bindDeleteEvents(); // 立即绑定删除事件
+        this.bindRenameEvents(); // 绑定重命名事件
         return this;
     }
 
@@ -889,9 +1060,24 @@ PageComponents.FileSelector = class extends BaseComponent {
                     <img src="${displayImg}" alt="文件预览" class="file-icon">
                 </div>
                 <div class="file-info">
-                    <div class="file-name">${fileData.file.name}</div>
+                    <input type="text" class="rename-input" data-file-id="${fileData.id}" value="${fileData.file.name}" />
+                    <div class="rename-actions" data-file-id="${fileData.id}">
+                        <button class="rename-confirm" data-file-id="${fileData.id}">确认</button>
+                        <button class="rename-cancel" data-file-id="${fileData.id}">取消</button>
+                    </div>
+                    <div class="file-name" data-file-id="${fileData.id}">${fileData.file.name}</div>
                     <div class="file-size">${this.formatFileSize(fileData.file.size)}</div>
                 </div>
+                ${this.config.allowRename ? `
+                <div class="file-actions">
+                    <button class="rename-btn" data-file-id="${fileData.id}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                        重命名
+                    </button>
+                </div>
+                ` : ''}
                 ${this.config.allowDelete ? `
                 <div class="file-actions">
                     <button class="delete-btn" data-file-id="${fileData.id}">
@@ -987,6 +1173,18 @@ PageComponents.FileSelector = class extends BaseComponent {
                 `;
             }
             
+            // 重命名按钮
+            if (this.config.allowRename) {
+                actionsHTML += `
+                    <button class="action-btn rename" onclick="component_${this.componentId}.startRenameListItem('${fileData.id}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                        </svg>
+                        重命名
+                    </button>
+                `;
+            }
+            
             // 旋转按钮（仅在允许旋转时显示）
             if (this.config.listMode.allowRotate && this.isImageFile(fileData.file)) {
                 actionsHTML += `
@@ -1031,7 +1229,12 @@ PageComponents.FileSelector = class extends BaseComponent {
                     </div>
                 </div>
                 <div class="file-info-area">
-                    <div class="file-name-display" title="${displayName}">${displayName}</div>
+                    <input type="text" class="rename-input-list" data-file-id="${fileData.id}" value="${displayName}" />
+                    <div class="rename-actions-list" data-file-id="${fileData.id}">
+                        <button class="rename-confirm" data-file-id="${fileData.id}">确认</button>
+                        <button class="rename-cancel" data-file-id="${fileData.id}">取消</button>
+                    </div>
+                    <div class="file-name-display" data-file-id="${fileData.id}" title="${displayName}">${displayName}</div>
                     <div class="file-size-display">${this.formatFileSize(displaySize)}</div>
                     <div class="file-actions-area">
                         ${actionsHTML}
@@ -1153,6 +1356,54 @@ PageComponents.FileSelector = class extends BaseComponent {
         
         this.eventsBound = true;
     }
+    
+    bindRenameEvents() {
+        // 防止重复绑定
+        if (this.renameEventsBound) return;
+        
+        const container = document.querySelector(this.config.container);
+        container.addEventListener('click', (e) => {
+            // 重命名按钮点击
+            const renameBtn = e.target.closest('.rename-btn');
+            if (renameBtn && renameBtn.getAttribute('data-file-id')) {
+                const fileId = renameBtn.getAttribute('data-file-id');
+                this.startRename(fileId);
+            }
+            
+            // 确认重命名
+            const confirmBtn = e.target.closest('.rename-confirm');
+            if (confirmBtn && confirmBtn.getAttribute('data-file-id')) {
+                const fileId = confirmBtn.getAttribute('data-file-id');
+                this.confirmRename(fileId);
+            }
+            
+            // 取消重命名
+            const cancelBtn = e.target.closest('.rename-cancel');
+            if (cancelBtn && cancelBtn.getAttribute('data-file-id')) {
+                const fileId = cancelBtn.getAttribute('data-file-id');
+                this.cancelRename(fileId);
+            }
+        });
+        
+        // 绑定输入框回车事件
+        container.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const input = e.target.closest('.rename-input, .rename-input-list');
+                if (input && input.getAttribute('data-file-id')) {
+                    const fileId = input.getAttribute('data-file-id');
+                    this.confirmRename(fileId);
+                }
+            } else if (e.key === 'Escape') {
+                const input = e.target.closest('.rename-input, .rename-input-list');
+                if (input && input.getAttribute('data-file-id')) {
+                    const fileId = input.getAttribute('data-file-id');
+                    this.cancelRename(fileId);
+                }
+            }
+        });
+        
+        this.renameEventsBound = true;
+    }
 
     removeFile(fileId) {
         // 移除文件数据
@@ -1175,6 +1426,172 @@ PageComponents.FileSelector = class extends BaseComponent {
         
         // 检查并处理文件数量为0的情况
         this.checkAndHandleEmptyFiles();
+    }
+    
+    startRename(fileId) {
+        const container = document.querySelector(this.config.container);
+        const fileItem = container.querySelector(`[data-file-id="${fileId}"]`).closest('.file-item-' + this.componentId);
+        
+        if (fileItem) {
+            const fileName = fileItem.querySelector(`.file-name[data-file-id="${fileId}"]`);
+            const renameInput = fileItem.querySelector(`.rename-input[data-file-id="${fileId}"]`);
+            const renameActions = fileItem.querySelector(`.rename-actions[data-file-id="${fileId}"]`);
+            
+            if (fileName && renameInput && renameActions) {
+                // 获取文件数据
+                const fileData = this.files.find(f => f.id === fileId);
+                if (fileData) {
+                    // 获取文件名（不含扩展名）
+                    const fullName = fileData.file.name;
+                    const lastDotIndex = fullName.lastIndexOf('.');
+                    const nameWithoutExt = lastDotIndex > -1 ? fullName.substring(0, lastDotIndex) : fullName;
+                    
+                    // 设置输入框值为不含扩展名的文件名
+                    renameInput.value = nameWithoutExt;
+                }
+                
+                fileName.style.display = 'none';
+                renameInput.classList.add('active');
+                renameActions.classList.add('active');
+                renameInput.focus();
+                renameInput.select();
+            }
+        }
+    }
+    
+    startRenameListItem(fileId) {
+        const container = document.querySelector(this.config.container);
+        const fileItem = container.querySelector(`[data-file-id="${fileId}"]`).closest('.file-list-item-' + this.componentId);
+        
+        if (fileItem) {
+            const fileName = fileItem.querySelector(`.file-name-display[data-file-id="${fileId}"]`);
+            const renameInput = fileItem.querySelector(`.rename-input-list[data-file-id="${fileId}"]`);
+            const renameActions = fileItem.querySelector(`.rename-actions-list[data-file-id="${fileId}"]`);
+            
+            if (fileName && renameInput && renameActions) {
+                // 获取文件数据
+                const fileData = this.files.find(f => f.id === fileId);
+                if (fileData) {
+                    // 获取文件名（不含扩展名）
+                    const fullName = fileData.file.name;
+                    const lastDotIndex = fullName.lastIndexOf('.');
+                    const nameWithoutExt = lastDotIndex > -1 ? fullName.substring(0, lastDotIndex) : fullName;
+                    
+                    // 设置输入框值为不含扩展名的文件名
+                    renameInput.value = nameWithoutExt;
+                }
+                
+                fileName.style.display = 'none';
+                renameInput.classList.add('active');
+                renameActions.classList.add('active');
+                renameInput.focus();
+                renameInput.select();
+            }
+        }
+    }
+    
+    confirmRename(fileId) {
+        const container = document.querySelector(this.config.container);
+        const renameInput = container.querySelector(`.rename-input[data-file-id="${fileId}"], .rename-input-list[data-file-id="${fileId}"]`);
+        
+        if (renameInput) {
+            const newName = renameInput.value.trim();
+            if (newName && newName !== '') {
+                this.renameFile(fileId, newName);
+            }
+            this.cancelRename(fileId);
+        }
+    }
+    
+    cancelRename(fileId) {
+        const container = document.querySelector(this.config.container);
+        
+        // 处理卡片模式
+        const fileItem = container.querySelector(`[data-file-id="${fileId}"]`).closest('.file-item-' + this.componentId);
+        if (fileItem) {
+            const fileName = fileItem.querySelector(`.file-name[data-file-id="${fileId}"]`);
+            const renameInput = fileItem.querySelector(`.rename-input[data-file-id="${fileId}"]`);
+            const renameActions = fileItem.querySelector(`.rename-actions[data-file-id="${fileId}"]`);
+            
+            if (fileName && renameInput && renameActions) {
+                fileName.style.display = 'block';
+                renameInput.classList.remove('active');
+                renameActions.classList.remove('active');
+                
+                // 恢复原始文件名
+                const fileData = this.files.find(f => f.id === fileId);
+                if (fileData) {
+                    renameInput.value = fileData.file.name;
+                }
+            }
+        }
+        
+        // 处理列表模式
+        const listItem = container.querySelector(`[data-file-id="${fileId}"]`).closest('.file-list-item-' + this.componentId);
+        if (listItem) {
+            const fileName = listItem.querySelector(`.file-name-display[data-file-id="${fileId}"]`);
+            const renameInput = listItem.querySelector(`.rename-input-list[data-file-id="${fileId}"]`);
+            const renameActions = listItem.querySelector(`.rename-actions-list[data-file-id="${fileId}"]`);
+            
+            if (fileName && renameInput && renameActions) {
+                fileName.style.display = 'block';
+                renameInput.classList.remove('active');
+                renameActions.classList.remove('active');
+                
+                // 恢复原始文件名
+                const fileData = this.files.find(f => f.id === fileId);
+                if (fileData) {
+                    renameInput.value = fileData.file.name;
+                }
+            }
+        }
+    }
+    
+    renameFile(fileId, newName) {
+        const fileData = this.files.find(f => f.id === fileId);
+        if (fileData) {
+            // 获取文件扩展名
+            const lastDotIndex = fileData.file.name.lastIndexOf('.');
+            let extension = '';
+            if (lastDotIndex > -1) {
+                extension = fileData.file.name.substring(lastDotIndex);
+            }
+            
+            // 如果新名称没有扩展名，添加原有的扩展名
+            if (extension && !newName.endsWith(extension)) {
+                newName = newName + extension;
+            }
+            
+            // 创建新的File对象
+            const newFile = new File([fileData.file], newName, {
+                type: fileData.file.type,
+                lastModified: fileData.file.lastModified
+            });
+            
+            // 更新文件数据
+            fileData.file = newFile;
+            
+            // 更新DOM显示
+            const container = document.querySelector(this.config.container);
+            
+            // 更新卡片模式的文件名显示
+            const cardFileName = container.querySelector(`.file-name[data-file-id="${fileId}"]`);
+            if (cardFileName) {
+                cardFileName.textContent = newName;
+            }
+            
+            // 更新列表模式的文件名显示
+            const listFileName = container.querySelector(`.file-name-display[data-file-id="${fileId}"]`);
+            if (listFileName) {
+                listFileName.textContent = newName;
+                listFileName.title = newName;
+            }
+            
+            // 触发文件变化事件
+            if (this.config.onFileSelect) {
+                this.config.onFileSelect(this.files.map(f => f.file));
+            }
+        }
     }
 
     // 新增方法：检查并处理文件数量为0的情况

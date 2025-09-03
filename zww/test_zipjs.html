@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>zip.js 测试页面</title>
+    <script src="https://unpkg.com/@zip.js/zip.js@2/dist/zip-full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-area {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        input[type="file"] {
+            margin: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.3s;
+            width: 0%;
+        }
+    </style>
+</head>
+<body>
+    <h1>zip.js 功能测试</h1>
+    
+    <div class="test-area">
+        <h2>1. 库加载测试</h2>
+        <button onclick="testLibraryLoad()">测试 zip.js 是否加载</button>
+        <div id="libTest"></div>
+    </div>
+    
+    <div class="test-area">
+        <h2>2. 文件压缩测试</h2>
+        <input type="file" id="fileInput" multiple>
+        <br>
+        <button onclick="testCompression()">测试压缩</button>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <div id="compressionTest"></div>
+    </div>
+    
+    <div class="test-area">
+        <h2>3. Worker 测试</h2>
+        <button onclick="testWorker()">测试 Worker 功能</button>
+        <div id="workerTest"></div>
+    </div>
+    
+    <div id="output">
+        <h3>输出日志：</h3>
+        <div id="log"></div>
+    </div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            logDiv.innerHTML += `<div style="color: ${color}">[${time}] ${message}</div>`;
+        }
+        
+        function updateProgress(percent) {
+            document.getElementById('progressBar').style.width = percent + '%';
+        }
+        
+        // 测试 1: 库加载
+        function testLibraryLoad() {
+            const testDiv = document.getElementById('libTest');
+            try {
+                if (typeof zip !== 'undefined') {
+                    testDiv.innerHTML = '✅ zip.js 加载成功';
+                    log('zip.js 库已成功加载', 'success');
+                    
+                    // 测试主要类是否存在
+                    const classes = ['BlobWriter', 'BlobReader', 'ZipWriter', 'ZipReader'];
+                    let allExist = true;
+                    classes.forEach(className => {
+                        if (typeof zip[className] === 'function') {
+                            log(`✓ ${className} 类存在`, 'success');
+                        } else {
+                            log(`✗ ${className} 类不存在`, 'error');
+                            allExist = false;
+                        }
+                    });
+                    
+                    if (allExist) {
+                        log('所有必要的类都已加载', 'success');
+                    }
+                } else {
+                    testDiv.innerHTML = '❌ zip.js 未加载';
+                    log('zip.js 库未找到', 'error');
+                }
+            } catch (error) {
+                testDiv.innerHTML = '❌ 测试失败: ' + error.message;
+                log('测试库加载失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 测试 2: 文件压缩
+        async function testCompression() {
+            const fileInput = document.getElementById('fileInput');
+            const testDiv = document.getElementById('compressionTest');
+            
+            if (fileInput.files.length === 0) {
+                testDiv.innerHTML = '请先选择文件';
+                log('请选择至少一个文件', 'error');
+                return;
+            }
+            
+            try {
+                log('开始压缩测试...', 'info');
+                updateProgress(0);
+                
+                // 创建 BlobWriter 和 ZipWriter
+                const blobWriter = new zip.BlobWriter("application/zip");
+                const zipWriter = new zip.ZipWriter(blobWriter);
+                
+                const files = Array.from(fileInput.files);
+                let currentIndex = 0;
+                
+                // 添加每个文件
+                for (const file of files) {
+                    log(`添加文件: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
+                    
+                    await zipWriter.add(
+                        file.name,
+                        new zip.BlobReader(file),
+                        {
+                            level: 6,
+                            useWebWorkers: true,
+                            onprogress: (progress, total) => {
+                                const fileProgress = (currentIndex / files.length) * 100;
+                                const currentFileProgress = (progress / total) * (100 / files.length);
+                                const totalProgress = Math.round(fileProgress + currentFileProgress);
+                                updateProgress(totalProgress);
+                            }
+                        }
+                    );
+                    
+                    currentIndex++;
+                }
+                
+                // 关闭并获取 blob
+                await zipWriter.close();
+                const blob = await blobWriter.getData();
+                
+                updateProgress(100);
+                testDiv.innerHTML = `✅ 压缩成功！文件大小: ${(blob.size / 1024).toFixed(2)} KB`;
+                log(`压缩完成，输出文件大小: ${(blob.size / 1024).toFixed(2)} KB`, 'success');
+                
+                // 创建下载链接
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test.zip';
+                a.textContent = '下载测试文件';
+                a.style.display = 'block';
+                a.style.marginTop = '10px';
+                testDiv.appendChild(a);
+                
+            } catch (error) {
+                testDiv.innerHTML = '❌ 压缩失败: ' + error.message;
+                log('压缩测试失败: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+        
+        // 测试 3: Worker 功能
+        async function testWorker() {
+            const testDiv = document.getElementById('workerTest');
+            
+            try {
+                log('测试 Worker 功能...', 'info');
+                
+                // 检查 Worker 支持
+                if (typeof Worker === 'undefined') {
+                    testDiv.innerHTML = '❌ 浏览器不支持 Web Worker';
+                    log('浏览器不支持 Web Worker', 'error');
+                    return;
+                }
+                
+                // 配置 zip.js 使用 Worker
+                zip.configure({
+                    useWebWorkers: true,
+                    maxWorkers: 2
+                });
+                
+                // 创建测试数据
+                const testData = new Blob(['这是一个用于测试 Worker 的文本文件内容。'.repeat(1000)]);
+                
+                // 压缩测试
+                const blobWriter = new zip.BlobWriter("application/zip");
+                const zipWriter = new zip.ZipWriter(blobWriter);
+                
+                await zipWriter.add(
+                    "worker-test.txt",
+                    new zip.BlobReader(testData),
+                    {
+                        level: 9,
+                        useWebWorkers: true,
+                        onprogress: (progress, total) => {
+                            log(`Worker 压缩进度: ${Math.round(progress/total*100)}%`, 'info');
+                        }
+                    }
+                );
+                
+                await zipWriter.close();
+                const blob = await blobWriter.getData();
+                
+                testDiv.innerHTML = `✅ Worker 测试成功！压缩后大小: ${(blob.size / 1024).toFixed(2)} KB`;
+                log('Worker 功能正常', 'success');
+                
+            } catch (error) {
+                testDiv.innerHTML = '❌ Worker 测试失败: ' + error.message;
+                log('Worker 测试失败: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+        
+        // 页面加载时自动测试库
+        window.addEventListener('load', () => {
+            setTimeout(testLibraryLoad, 500);
+        });
+    </script>
+</body>
+</html>

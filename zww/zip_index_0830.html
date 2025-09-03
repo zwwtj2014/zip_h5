@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -6,8 +7,7 @@
     <title>文件压缩工具</title>
     
     <!-- 必要的第三方库 - 从 index.html 复制 -->
-    <script src="./js/page-components.js"></script>
-    <script src="https://yhl.xiexinbao.com/common/scripts/module.showcast.25.7.29.1.js"></script>
+    <script src="https://zww2.xiexinbao.com/js/page-components-0830.js"></script>
 
     <!-- 原有的压缩相关库 -->
     <script src="https://zww2.xiexinbao.com/js/zww_utils.js"></script>
@@ -83,9 +83,10 @@
         };
     }
 
+    var popDiv;
+
     // 全局变量
     const order_id = getId();
-    const user_id = getUserId() || window.fp_id;
     const item_id = '4';
     const item_name = 'zip压缩';
     const task_type = 'zip';
@@ -104,7 +105,8 @@
     // 微信客服功能 - 使用原来 zip_index.html 的逻辑
     window.callWxkefu = async () => {
         var user_id = getUserId() || window.fp_id || '';
-        var wx_service_link = `https://work.weixin.qq.com/kfid/kfc7d846fca34c6ca69?enc_scene=ENCettynNzrtEHbKDpamvHQPpMev884BwvoYrk3i2CQymZ&scene_param=${user_id}`;
+        // https://work.weixin.qq.com/kfid/kfc3cef22a5282e26e8?enc_scene=ENCCBodKkRSro2NyHPoCbkVbTZx9c7WbVhpRub6NUjcMwyP
+        var wx_service_link = `https://work.weixin.qq.com/kfid/kfc3cef22a5282e26e8?enc_scene=ENCCBodKkRSro2NyHPoCbkVbTZx9c7WbVhpRub6NUjcMwyP&scene_param=${user_id}`;
         
         const isWx = /micromessenger/i.test(navigator.userAgent);
         if (isWx) {
@@ -190,12 +192,13 @@
             subtitle: '支持多种文件格式同时上传并压缩',
             buttonText: '选择文件',
             acceptTypes: ['*/*'],
-            multiple: true,
+            multiple: false,
             maxFiles: 100,
             displayMode: 'list',
             showPreview: false, // 改为 true，让库处理预览逻辑
             allowSorting: false,
             allowDelete: true,
+            allowRename: true,
             listMode: {
                 style: 'enhanced',
                 showCounter: false,
@@ -244,7 +247,7 @@
             title: '历史记录',
             buttonText: '下载',
             onlypaid: false,
-            user_id: user_id,
+            user_id: getUserId(),
         });
 
         // 5. 初始化导出容器
@@ -389,7 +392,7 @@
 
     // 开始压缩 - 使用原来 zip_index.html 的压缩逻辑
     async function startCompress() {
-        const selectedFiles = getSelectedFiles();
+        const selectedFiles = pageComponents.fileSelector.files;
         console.log('获取到的文件列表:', selectedFiles);
         console.log('文件数量:', selectedFiles.length);
         
@@ -475,14 +478,20 @@
             }
             
             $ShowCast.loading('上传压缩结果...');
+            popDiv = popToast({title:'文件压缩中...',icon:'loading'});
     
-            var file_url = await upload_file(zipBlob.arrayBuffer());
+            var file_url = await upload_file({
+                buffer: await zipBlob.arrayBuffer(),
+                length: zipBlob.size
+            });
             var file_size = zipBlob.size;
 
             // 创建订单
             await createCompressOrder(selectedFiles, file_url, file_size);
 
-            $ShowCast.closeAll();   
+            popDiv.closeSelf();
+
+            $ShowCast.closeAll();
             window.location.href = result_url;
             
         } catch (error) {
@@ -493,13 +502,16 @@
         }
     }
 
+
     // 创建压缩订单 - 基于原来的逻辑
     async function createCompressOrder(selectedFiles, file_url, file_size) {
         try {
-            var user_id = getUserId() || window.fp_id;
-            var order_id = getId();
+            var user_id = getUserId() || window.fp_id || '';
             var order_result_page = `/zww/zip_result.html?id=${order_id}`;
             var pay_callback = order_result_page;
+            var fileSize = (file_size/1024/1024).toFixed(1);
+            var ori_file_size = getTotalSize(selectedFiles);
+            var ori_file_size_mb = (ori_file_size/1024/1024).toFixed(1);
             
             var data_in = {
                 'jump_kefu': 0,
@@ -508,8 +520,8 @@
                 'item_id': 4,
                 'item_name': 'zip压缩',
                 'task_type': 'zip',
-                'file_size': file_size,
-                'ori_file_size': getTotalSize(selectedFiles),
+                'file_size': fileSize,
+                'ori_file_size': ori_file_size_mb,
                 'ori_file_url': '',
                 'ori_file_name': `${Date.now()+'_'+selectedFiles.length}.zip`,
             };
@@ -541,6 +553,7 @@
             var ori_file_name = data_in.ori_file_name;
             await add_wxfile({
                 id: order_id, 
+                ua: getOS()+'_' +getBrowser(),
                 file_url: file_url, 
                 file_size: file_size, 
                 file_type: 'zip', 
@@ -606,7 +619,7 @@
             suffix: ".zip",
             name: zip_data.name || "output.zip",
         }
-        var file_url = await $uploader.uploadFile(Object.assign(file_obj, {filename:'/zww/ori_file/'+getCurrentDate()+'/'+Date.now()+file_obj.suffix}));
+        var file_url = await $uploader.uploadFile(Object.assign(file_obj, {filename:`/zww/ori_file/zip/${order_id}/${Date.now()}${file_obj.suffix}`}));
         if(file_url && file_url.indexOf('http')>-1) {
             return new Promise(function(resolve,reject){
                 resolve(file_url);
