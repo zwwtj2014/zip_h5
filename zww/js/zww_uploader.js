@@ -191,10 +191,11 @@ $uploader.isExistFile = async function (file_url) {
     request.send();
   });
 };
-$uploader.uploadFile = async function (obj) {//obj.mine,obj.data,obj.filename
+$uploader.uploadFile = async function (obj) {//obj.mine,obj.data,obj.filename,obj.onProgress
   var http_get=function(req){return new Promise((resolve,reject)=>{var xhr=new XMLHttpRequest();xhr.ontimeout=function(e){resolve('');xhr.abort();};xhr.onerror=function(e){resolve('');};xhr.open("GET",req.url,true);xhr.onreadystatechange=function(){if(xhr.readyState==4){resolve(xhr.responseText);}};xhr.timeout=1500;xhr.send();});};
   var mime = obj.mime ? obj.mime : "image/png";
   var file_data = obj.data;
+  var onProgress = obj.onProgress || function() {}; // 添加进度回调参数
   var oss_text = await http_get({url:$uploader.getProtocol() +"//www.xiexinbao.com/oss_hz/params?mime=" +mime +"&filename=" +(obj.filename || "")});
   if (oss_text.indexOf('{')==-1) {
     oss_text = await http_get({url:$uploader.getProtocol() +"//www.xiexinbao.com/oss_hz/params?mime=" +mime +"&filename=" +(obj.filename || "")});
@@ -220,8 +221,14 @@ $uploader.uploadFile = async function (obj) {//obj.mine,obj.data,obj.filename
         };
         request.upload.onprogress = function(evt){
           if (evt.lengthComputable) {
+            const percentComplete = Math.round(evt.loaded / evt.total * 100);
+            
+            // 调用进度回调
+            onProgress(percentComplete);
+            
+            // 保留原有 DOM 更新（兼容旧代码）
             if(document.querySelector("#progress_status")) {
-              document.querySelector("#progress_status").innerHTML = Math.round(evt.loaded / evt.total * 100) + "%";
+              document.querySelector("#progress_status").innerHTML = percentComplete + "%";
             }
           }
         }

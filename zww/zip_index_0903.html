@@ -422,7 +422,7 @@
         return processedFiles;
     }
 
-    // 开始压缩 - 使用 zip.js 替代 JSZip
+    // 开始压缩 - 使用 zip.js 替代 JSZip（支持并行压缩、流式处理、统一进度条）
     async function startCompress() {
         const selectedFiles = pageComponents.fileSelector.files;
         console.log('获取到的文件列表:', selectedFiles);
@@ -433,110 +433,155 @@
             return;
         }
 
-        $ShowCast.loading('请稍候...');
+        $ShowCast.loading('准备压缩...');
+        
+        // 创建统一的进度条（0-100%）
         let progressToast = createCustomProgressToast(0);
+        
+        // 进度分配：压缩 70%，上传 30%
+        const COMPRESS_WEIGHT = 70;
+        const UPLOAD_WEIGHT = 30;
+        
+        // 统一的进度更新函数
+        const updateTotalProgress = (progress) => {
+            const rounded = Math.round(progress);
+            if (progressToast && typeof progressToast.updateProgress === 'function') {
+                progressToast.updateProgress(rounded);
+            }
+            // 关键进度点日志
+            if (rounded % 10 === 0 || rounded === 100) {
+                console.log(`📊 总进度: ${rounded}%`);
+            }
+        };
 
         try {
+            // ============ 第一阶段：压缩（0-70%）============
             console.log('🗃️ 开始压缩:', selectedFiles.length, '个文件');
-
-            // 检查 zip.js 是否加载
+            
             if (typeof zip === 'undefined') {
                 throw new Error('压缩库未加载，请刷新页面重试');
             }
 
-            // 配置 zip.js (可选，优化性能)
+            // 优化 zip.js 配置
             zip.configure({
-                useWebWorkers: true,      // 启用 Worker
-                maxWorkers: 2,            // 限制 Worker 数量
-                terminateWorkerTimeout: 5000  // Worker 空闲 5 秒后终止
+                useWebWorkers: true,
+                maxWorkers: navigator.hardwareConcurrency || 4,  // 根据 CPU 核心数
+                terminateWorkerTimeout: 5000
             });
 
-            // 创建 BlobWriter 和 ZipWriter
+            // 创建 ZipWriter，启用高级特性
             const blobWriter = new zip.BlobWriter("application/zip");
-            const zipWriter = new zip.ZipWriter(blobWriter);
+            const zipWriter = new zip.ZipWriter(blobWriter, {
+                zip64: true,           // 支持 >4GB 文件
+                bufferedWrite: true,   // 缓冲写入提升性能
+                keepOrder: false       // 允许并行压缩优化顺序
+            });
             
-            // 预处理文件名，避免重复
             const processedFiles = preprocessFileNames(selectedFiles);
             
-            // 添加文件到 zip
-            let currentFileIndex = 0;
-            const totalFiles = processedFiles.length;
+            // 并行压缩实现
+            const BATCH_SIZE = 3;  // 每批并行处理 3 个文件
+            const fileProgresses = new Array(processedFiles.length).fill(0);
             
-            for (const fileData of processedFiles) {
-                const file = fileData.file;
-                const fileName = fileData.processedName || file.name;
+            // 批量并行处理文件
+            for (let i = 0; i < processedFiles.length; i += BATCH_SIZE) {
+                const batch = processedFiles.slice(i, i + BATCH_SIZE);
                 
-                // 添加单个文件，带进度回调
-                await zipWriter.add(
-                    fileName, 
-                    new zip.BlobReader(file),
-                    {
-                        level: 6,  // 压缩级别 (0-9)
-                        useWebWorkers: true,  // 使用 Worker
-                        onprogress: (progress, total) => {
-                            // 计算总进度
-                            const fileProgress = (currentFileIndex / totalFiles) * 100;
-                            const currentFileProgress = (progress / total) * (100 / totalFiles);
-                            const totalProgress = Math.round(fileProgress + currentFileProgress);
-                            
-                            if (progressToast && typeof progressToast.updateProgress === 'function') {
-                                try {
-                                    progressToast.updateProgress(totalProgress);
-                                } catch (e) {
-                                    console.error('更新进度条失败', e);
-                                }
+                await Promise.all(
+                    batch.map(async (fileData, batchIndex) => {
+                        const file = fileData.file;
+                        const fileName = fileData.processedName || file.name;
+                        const fileIndex = i + batchIndex;
+                        
+                        // 大文件使用流式处理（>50MB）
+                        const reader = file.size > 50 * 1024 * 1024 
+                            ? file.stream()  // 流式读取，节省内存
+                            : new zip.BlobReader(file);  // 小文件直接读取
+                        
+                        // 添加文件到 zip
+                        return zipWriter.add(fileName, reader, {
+                            level: 6,  // 压缩级别
+                            useWebWorkers: true,
+                            onprogress: (progress, total) => {
+                                // 更新单个文件进度
+                                fileProgresses[fileIndex] = (progress / total) * 100;
+                                
+                                // 计算总体压缩进度
+                                const avgProgress = fileProgresses.reduce((sum, p) => sum + p, 0) / fileProgresses.length;
+                                const compressProgress = (avgProgress / 100) * COMPRESS_WEIGHT;
+                                
+                                updateTotalProgress(compressProgress);
                             }
-                            
-                            // 调试输出
-                            if (totalProgress % 10 === 0 || totalProgress === 100) {
-                                console.log(`进度更新: ${totalProgress}%`);
-                            }
-                        }
-                    }
+                        });
+                    })
                 );
                 
-                console.log(`📁 已添加文件: ${fileName} (${formatFileSize(file.size)})`);
-                currentFileIndex++;
-                
-                // 小延迟让UI更新
-                await sleep(10);
+                console.log(`✅ 批次 ${Math.floor(i / BATCH_SIZE) + 1} 压缩完成`);
             }
             
-            // 关闭 ZipWriter
+            // 关闭 zip writer 并获取最终 blob
             await zipWriter.close();
-            
-            // 获取压缩后的 blob
             const zipBlob = await blobWriter.getData();
             
-            console.log(`✅ 压缩完成，文件大小: ${formatFileSize(zipBlob.size)}`);
+            console.log(`✅ 压缩完成，大小: ${formatFileSize(zipBlob.size)}`);
+            updateTotalProgress(COMPRESS_WEIGHT);  // 确保显示 70%
             
-            // 关闭进度显示
-            if (progressToast && typeof progressToast.close === 'function') {
-                progressToast.close();
+            // ============ 第二阶段：上传（70-100%）============
+            console.log('📤 开始上传压缩文件...');
+            
+            // 准备上传数据
+            const arrayBuffer = await zipBlob.arrayBuffer();
+            
+            // 使用改进的 $uploader.uploadFile，带进度回调
+            const file_url = await $uploader.uploadFile({
+                data: arrayBuffer,
+                size: zipBlob.size,
+                mime: "application/octet-stream",
+                suffix: ".zip",
+                name: `${order_id}_${Date.now()}.zip`,
+                filename: `/zww/ori_file/zip/${order_id}/${Date.now()}.zip`,
+                
+                // 新增：进度回调
+                onProgress: (uploadPercent) => {
+                    // 将上传进度映射到 70-100%
+                    const totalProgress = COMPRESS_WEIGHT + (uploadPercent * UPLOAD_WEIGHT / 100);
+                    updateTotalProgress(totalProgress);
+                    
+                    // 上传完成
+                    if (uploadPercent >= 100) {
+                        console.log('✅ 上传完成');
+                    }
+                }
+            });
+            
+            if (!file_url || file_url.indexOf('http') === -1) {
+                throw new Error('文件上传失败');
             }
             
-            // 上传文件
-            popDiv = popToast({title:'文件上传中...',icon:'loading'});
-    
-            var file_url = await upload_file({
-                buffer: await zipBlob.arrayBuffer(),
-                length: zipBlob.size
-            });
-            var file_size = zipBlob.size;
-
+            // 确保显示 100%
+            updateTotalProgress(100);
+            console.log('✅ 所有操作完成！');
+            
             // 创建订单
-            await createCompressOrder(selectedFiles, file_url, file_size);
-
-            popDiv.closeSelf();
-
-            $ShowCast.closeAll();
-            window.location.href = result_url;
+            await createCompressOrder(selectedFiles, file_url, zipBlob.size);
+            
+            // 延迟关闭进度条，让用户看到 100%
+            setTimeout(() => {
+                if (progressToast && typeof progressToast.close === 'function') {
+                    progressToast.close();
+                }
+                $ShowCast.success('压缩上传完成！');
+            }, 500);
+            
+            // 延迟跳转，显示成功信息
+            setTimeout(() => {
+                window.location.href = result_url;
+            }, 1500);
             
         } catch (error) {
-            console.error('压缩失败:', error);
-            $ShowCast.error('压缩失败：' + (error.message || '未知错误'));
+            console.error('操作失败:', error);
+            $ShowCast.error('操作失败：' + (error.message || '未知错误'));
             
-            // 关闭进度显示
             if (progressToast && typeof progressToast.close === 'function') {
                 progressToast.close();
             }
@@ -654,6 +699,7 @@
         });
     };
 
+    // 保留原有的 upload_file 函数（备用）
     async function upload_file(zip_data) {
         var file_obj = {
             data: zip_data.buffer,
